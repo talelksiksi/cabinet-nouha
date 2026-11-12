@@ -1,0 +1,7 @@
+node_modules/
+.wrangler/
+.dev.vars
+*.key
+secrets/
+Thumbs.db
+.DS_Store
