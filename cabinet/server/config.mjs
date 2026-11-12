@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export function loadConfig(overrides = {}) {
-  const dataDir = path.resolve(overrides.dataDir || process.env.CABINET_DATA || path.join(ROOT, 'data'));
+  // Installation : C:\EspaceCabinet\app (le programme) et C:\EspaceCabinet\data (les données, conservées aux mises à jour)
+  const besideApp = path.join(ROOT, '..', 'data');
+  const dataDir = path.resolve(overrides.dataDir || process.env.CABINET_DATA || (fs.existsSync(besideApp) ? besideApp : path.join(ROOT, 'data')));
   for (const d of [dataDir, path.join(dataDir, 'backups'), path.join(dataDir, 'tls')]) fs.mkdirSync(d, { recursive: true });
 
   // Secrets : poivre des empreintes d'authentification, clé de chiffrement des sauvegardes, code d'installation

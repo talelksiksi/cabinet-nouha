@@ -14,6 +14,20 @@ npm test           # 24 scénarios de bout en bout
 Node.js 22.13 ou plus (SQLite intégré). Variables utiles : `CABINET_DATA` (dossier des données, par défaut `data/`),
 `CABINET_HTTPS_PORT`, `CABINET_HTTP_PORT`.
 
+## Démonstration sur ce PC
+
+Double-cliquer sur `LANCER-DEMO.cmd` (ou `node tools/demo.mjs`) : un cabinet fictif complet est recréé à chaque lancement
+(5 comptes, ~45 patients, agenda du jour, factures, labo…) puis s'ouvre sur <http://localhost:3475>.
+Identifiants de démonstration : `data-demo/COMPTES-DEMO.txt` (jamais dans Git).
+
+## Paquet d'installation
+
+```bash
+node tools/build-package.mjs     # → dist/EspaceCabinet-AAAA.MM.JJ.zip (Node.js inclus, rien à installer)
+```
+
+Sur le PC du cabinet : extraire, double-cliquer `INSTALLER.cmd`, suivre `GUIDE-INSTALLATION.html`.
+
 ## Première installation
 
 1. Au premier démarrage, le journal affiche un **code d'installation** (aussi dans `data/secrets.json`).
