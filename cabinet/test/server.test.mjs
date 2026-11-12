@@ -122,8 +122,8 @@ test('Dr Nouha active son compte, crée la clé des données et la clé de secou
 
 test('Dr Nouha enregistre des patients : la base ne contient rien de lisible', async () => {
   const c = S.nouha;
-  const amira = { firstName: 'Amira', lastName: 'Ben Salah', phone: '+216 22 123 456', cin: '07123456', allergies: 'Pénicilline' };
-  const blind = { phone: await C.blindIndex(S.dek, 'phone', amira.phone), cin: await C.blindIndex(S.dek, 'cin', amira.cin) };
+  const amira = { firstName: 'Amira', lastName: 'Ben Salah', phone: '+216 22 123 456', allergies: 'Pénicilline' };
+  const blind = { phone: await C.blindIndex(S.dek, 'phone', amira.phone) };
   assert.equal((await putRec(c, S.dek, 'patients', 'p1', amira, { blind })).status, 200);
   assert.equal((await putRec(c, S.dek, 'patients', 'p2', { firstName: 'Hela', lastName: 'Ferchichi', phone: '54 118 902' })).status, 200);
   assert.equal((await putRec(c, S.dek, 'expenses', 'e1', { label: 'Loyer', amount: 900 })).status, 200);
@@ -132,10 +132,10 @@ test('Dr Nouha enregistre des patients : la base ne contient rien de lisible', a
   // recherche par téléphone écrit autrement (indicatif, espaces) grâce à l'index aveugle
   const found = await c.get(`/api/blind?field=phone&hash=${encodeURIComponent(await C.blindIndex(S.dek, 'phone', '0021622123456'))}`);
   assert.deepEqual(found.ids, ['p1']);
-  // la base sur le disque : aucun nom, téléphone, CIN ni allergie en clair
+  // la base sur le disque : aucun nom, téléphone ni allergie en clair
   app.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
   const disk = fs.readFileSync(cfg.dbFile).toString('latin1');
-  for (const s of ['Amira', 'Salah', '22 123 456', '07123456', 'Pénicilline', 'nicilline', 'Ferchichi']) assert.ok(!disk.includes(s), `trouvé en clair : ${s}`);
+  for (const s of ['Amira', 'Salah', '22 123 456', 'Pénicilline', 'nicilline', 'Ferchichi']) assert.ok(!disk.includes(s), `trouvé en clair : ${s}`);
 });
 
 test('le super-admin gère le système mais ne voit aucune donnée patient', async () => {

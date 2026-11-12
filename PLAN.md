@@ -140,10 +140,12 @@ clé USB du mardi 11 h, HTTPS local avec autorité du cabinet, nom `cabinet-nouh
 (connexion, déverrouillage, synchronisation, écrans Utilisateurs / super-admin / sauvegardes et alerte du mardi,
 verrouillage automatique), polices et bibliothèques hors ligne, installation comme tâche Windows, guide du routeur.
 
+**Décision (13 novembre 2026)** : pas de numéro de CIN dans les fiches patients (non nécessaire) ; seul le téléphone a un index aveugle.
+
 **Avancement (12 novembre 2026, nuit)** — application branchée sur le serveur : connexion, activation par code, déverrouillage,
 clé des données + feuille de secours, attente d'autorisation, verrouillage auto 30 min ; stockage chiffré synchronisé (10 s) ;
 menus selon les accès ; pages Utilisateurs / Journal / Sauvegardes & système / Mon compte ; bandeau USB du mardi ; polices et
-icônes locales ; champ CIN. Démo : `cabinet/LANCER-DEMO.cmd`. Paquet autonome : `node tools/build-package.mjs`
+icônes locales (champ CIN ajouté puis retiré : non nécessaire). Démo : `cabinet/LANCER-DEMO.cmd`. Paquet autonome : `node tools/build-package.mjs`
 (ZIP 34 Mo, Node inclus, INSTALLER.cmd + guide) testé hors installation (14 vérifications). Formulaire du site : motif retiré.
 **À faire** : installation réelle au cabinet ; reprise des données existantes (voir réponse à Talel).
 

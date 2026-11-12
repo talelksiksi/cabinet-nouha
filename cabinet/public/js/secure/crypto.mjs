@@ -10,7 +10,7 @@
    clé personnelle ──AES-GCM──► protège la clé privée RSA-OAEP 3072 de l'utilisateur
    clé publique RSA ──► enveloppe la clé de données du cabinet (DEK, AES-GCM 256) pour cet utilisateur
    DEK ──AES-GCM──► chaque enregistrement (AAD = collection/id : impossible d'échanger deux lignes)
-   DEK ──HKDF──► clé HMAC des index aveugles (téléphone, CIN)
+   DEK ──HKDF──► clé HMAC de l'index aveugle (téléphone)
    clé de secours imprimée ──AES-GCM──► copie de la DEK, pour tout récupérer si plus personne n'a son mot de passe
    ═══════════════════════════════════════════ */
 
@@ -117,7 +117,6 @@ export async function decryptRecord(dek, collection, id, { iv, data }) {
 /* ── Index aveugles : recherche exacte sans stocker la valeur ── */
 const normalizers = {
   phone: v => String(v || '').replace(/\D/g, '').slice(-8),   // 8 derniers chiffres : +216 / 00216 / espaces sans effet
-  cin: v => String(v || '').replace(/\D/g, ''),
 };
 const hmacCache = new WeakMap();
 async function hmacKey(dek) {

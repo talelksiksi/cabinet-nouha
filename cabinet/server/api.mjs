@@ -435,7 +435,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
         c, id, b.iv, b.data, owners ? JSON.stringify(owners) : null, v, u.id);
       run('DELETE FROM blind_index WHERE collection = ? AND record_id = ?', c, id);
       if (c === 'patients' && b.blind && typeof b.blind === 'object')
-        for (const f of ['phone', 'cin']) if (b.blind[f] && isB64(b.blind[f], 20, 64)) run('INSERT INTO blind_index (collection, record_id, field, hash) VALUES (?, ?, ?, ?)', c, id, f, b.blind[f]);
+        for (const f of ['phone']) if (b.blind[f] && isB64(b.blind[f], 20, 64)) run('INSERT INTO blind_index (collection, record_id, field, hash) VALUES (?, ?, ?, ?)', c, id, f, b.blind[f]);
     });
     if (!['activity', 'settings'].includes(c)) audit(ctx, cur ? 'donnee_modifiee' : 'donnee_creee', `${c}/${id}`);
     return { v };
@@ -455,12 +455,12 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     audit(ctx, 'donnee_supprimee', `${c}/${id}`);
     return { v };
   });
-  // Recherche exacte par téléphone / CIN (empreinte calculée par le navigateur)
+  // Recherche exacte par téléphone (empreinte calculée par le navigateur)
   route('GET', '/api/blind', ctx => {
     const u = needActive(ctx);
     if (!canAccess(u, 'patients', null, false)) fail(403, 'forbidden', 'Accès aux patients non autorisé.');
     const field = ctx.url.searchParams.get('field'), hash = ctx.url.searchParams.get('hash');
-    if (!['phone', 'cin'].includes(field) || !isB64(hash, 20, 64)) fail(400, 'bad_request', 'Recherche invalide.');
+    if (field !== 'phone' || !isB64(hash, 20, 64)) fail(400, 'bad_request', 'Recherche invalide.');
     const ids = qa(`SELECT b.record_id id, r.owners, r.collection FROM blind_index b JOIN records r ON r.collection = b.collection AND r.id = b.record_id
                     WHERE b.collection = 'patients' AND b.field = ? AND b.hash = ? AND r.deleted = 0`, field, hash)
       .filter(r => visible(u, r)).map(r => r.id);

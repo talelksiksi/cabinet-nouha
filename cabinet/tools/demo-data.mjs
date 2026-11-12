@@ -38,7 +38,7 @@ export function buildDataset({ nouha, remp, now = new Date() }) {
     const city = pick(CITIES);
     const p = {
       id: id(), firstName: first, lastName: last, dob: `${now.getFullYear() - age}-${pad(int(1, 12))}-${pad(int(1, 28))}`, gender: g,
-      phone: `+216 ${pick(['2', '5', '9', '4'])}${int(0, 9)} ${int(100, 999)} ${int(100, 999)}`, cin: age >= 18 ? String(int(10000000, 15999999)).padStart(8, '0') : '',
+      phone: `+216 ${pick(['2', '5', '9', '4'])}${int(0, 9)} ${int(100, 999)} ${int(100, 999)}`,
       email: rnd() < .4 ? `${first.toLowerCase().replace(/\s/g, '')}.${last.toLowerCase().replace(/\s/g, '')}@exemple.tn` : '',
       address: `${int(1, 120)} ${pick(STREETS)}, ${city}`, bloodType: pick(['A+', 'O+', 'B+', 'AB+', 'A-', 'O-', '']), occupation: age < 20 ? 'Élève' : pick(JOBS),
       referredBy: rnd() < .25 ? 'Bouche-à-oreille' : '', patientSince: day(-int(20, 900)), allergies: pick(ALLERG), medications: pick(MEDS), conditions: pick(COND),

@@ -98,7 +98,7 @@ async function runQueue() {
         if (rec.v != null) body.base = rec.v;
         if (c === 'patients') {
           const o = JSON.parse(rec.json);
-          body.blind = { phone: await C.blindIndex(S.dek, 'phone', o.phone), cin: await C.blindIndex(S.dek, 'cin', o.cin) };
+          body.blind = { phone: await C.blindIndex(S.dek, 'phone', o.phone) };
         }
         const r = await api('PUT', `/api/records/${c}/${encodeURIComponent(id)}`, body);
         rec.v = r.v;

@@ -502,7 +502,7 @@ const Patients = {
     document.getElementById('patients-list-btn').classList.toggle('active',v==='list');
   },
   _clearForm() {
-    ['p-first-name','p-last-name','p-dob','p-phone','p-cin','p-email','p-address','p-occupation',
+    ['p-first-name','p-last-name','p-dob','p-phone','p-email','p-address','p-occupation',
      'p-referred','p-allergies','p-medications','p-conditions','p-dental-history','p-notes',
      'p-emg-name','p-emg-relation','p-emg-phone','p-emg-email','p-last-visit'].forEach(id=>{
       const el=document.getElementById(id); if(el) el.value='';
@@ -521,7 +521,7 @@ const Patients = {
     document.getElementById('patient-edit-id').value=p.id;
     const s=(eid,v)=>{ const e=document.getElementById(eid); if(e) e.value=v||''; };
     s('p-first-name',p.firstName); s('p-last-name',p.lastName); s('p-dob',p.dob);
-    s('p-phone',p.phone); s('p-cin',p.cin); s('p-email',p.email); s('p-address',p.address);
+    s('p-phone',p.phone); s('p-email',p.email); s('p-address',p.address);
     s('p-occupation',p.occupation); s('p-referred',p.referredBy);
     s('p-allergies',p.allergies); s('p-medications',p.medications);
     s('p-conditions',p.conditions); s('p-dental-history',p.dentalHistory);
@@ -547,7 +547,7 @@ const Patients = {
     if (!fn||!ln||!dob||!ph) { App.toast('Veuillez remplir les champs obligatoires (prénom, nom, naissance, téléphone)','error'); return; }
     const editId=document.getElementById('patient-edit-id').value;
     const patients=DB.patients();
-    const data={firstName:fn,lastName:ln,dob,gender:document.getElementById('p-gender').value,phone:ph,cin:document.getElementById('p-cin').value.replace(/\D/g,''),email:document.getElementById('p-email').value.trim(),address:document.getElementById('p-address').value.trim(),bloodType:document.getElementById('p-blood').value,occupation:document.getElementById('p-occupation').value.trim(),referredBy:document.getElementById('p-referred').value.trim(),patientSince:document.getElementById('p-since').value||Utils.today(),allergies:document.getElementById('p-allergies').value.trim(),medications:document.getElementById('p-medications').value.trim(),conditions:document.getElementById('p-conditions').value.trim(),dentalHistory:document.getElementById('p-dental-history').value.trim(),smoker:document.getElementById('p-smoker').value,lastVisit:document.getElementById('p-last-visit').value||'',notes:document.getElementById('p-notes').value.trim(),emergencyName:document.getElementById('p-emg-name').value.trim(),emergencyRelation:document.getElementById('p-emg-relation').value.trim(),emergencyPhone:document.getElementById('p-emg-phone').value.trim(),emergencyEmail:document.getElementById('p-emg-email').value.trim()};
+    const data={firstName:fn,lastName:ln,dob,gender:document.getElementById('p-gender').value,phone:ph,email:document.getElementById('p-email').value.trim(),address:document.getElementById('p-address').value.trim(),bloodType:document.getElementById('p-blood').value,occupation:document.getElementById('p-occupation').value.trim(),referredBy:document.getElementById('p-referred').value.trim(),patientSince:document.getElementById('p-since').value||Utils.today(),allergies:document.getElementById('p-allergies').value.trim(),medications:document.getElementById('p-medications').value.trim(),conditions:document.getElementById('p-conditions').value.trim(),dentalHistory:document.getElementById('p-dental-history').value.trim(),smoker:document.getElementById('p-smoker').value,lastVisit:document.getElementById('p-last-visit').value||'',notes:document.getElementById('p-notes').value.trim(),emergencyName:document.getElementById('p-emg-name').value.trim(),emergencyRelation:document.getElementById('p-emg-relation').value.trim(),emergencyPhone:document.getElementById('p-emg-phone').value.trim(),emergencyEmail:document.getElementById('p-emg-email').value.trim()};
     if (editId) {
       const i=patients.findIndex(x=>x.id==editId);
       patients[i]={...patients[i],...data};

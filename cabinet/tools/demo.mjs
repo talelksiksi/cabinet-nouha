@@ -86,7 +86,7 @@ async function seed() {
   const ownersOf = pid => [...new Set([...ds.appointments, ...ds.treatments].filter(x => x.patientId === pid && x.dentistId).map(x => x.dentistId))].sort();
   const put = async (c, id, obj, owners, blind) => n('PUT', `/api/records/${c}/${encodeURIComponent(id)}`, { ...(await C.encryptRecord(dek, c, String(id), obj)), owners, blind });
   let count = 0;
-  for (const p of ds.patients) { await put('patients', p.id, p, ownersOf(p.id), { phone: await C.blindIndex(dek, 'phone', p.phone), cin: await C.blindIndex(dek, 'cin', p.cin) }); count++; }
+  for (const p of ds.patients) { await put('patients', p.id, p, ownersOf(p.id), { phone: await C.blindIndex(dek, 'phone', p.phone) }); count++; }
   for (const c of ['appointments', 'treatments', 'payments', 'documents', 'labworks', 'gallery', 'requests', 'activity'])
     for (const o of ds[c]) { await put(c, o.id, o, o.patientId != null ? [...new Set([...ownersOf(o.patientId), ...(o.dentistId ? [o.dentistId] : [])])].sort() : (c === 'requests' || c === 'activity' ? [] : null)); count++; }
   for (const c of ['labs', 'labpayments', 'tasks', 'expenses']) for (const o of ds[c]) { await put(c, o.id, o, null); count++; }
