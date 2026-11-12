@@ -17,7 +17,9 @@ hébergés sur **Cloudflare**, avec les données des patients **chiffrées** de 
 | Autre lieu | Interventions dans une grande clinique à Djerba ; travaille aussi depuis chez elle |
 | Facebook | https://www.facebook.com/drksiksinouha/ |
 | Slogans existants | « Votre sourire, notre engagement » · « Votre sourire, notre priorité » · « Des soins de qualité pour un sourire durable » · « ابتسامتك .. أولويتنا » |
-| À obtenir | Téléphone / WhatsApp, horaires, e-mail, nom de domaine, logo en fichier vectoriel (SVG/PDF), diplômes et formations, nom de la clinique de Djerba (et accord pour la citer) |
+| Cabinet | 1 Bis Rue Pasteur, Médenine Sud 4100 · fiche Google : https://maps.app.goo.gl/cMfdkKGYkvkVVkUMA (33.33230, 10.48935) |
+| Téléphone | Cabinet 23 232 407 · WhatsApp 98 192 130 |
+| À obtenir | Horaires, e-mail, nom de domaine, logo en fichier vectoriel (SVG/PDF), diplômes et formations, nom de la clinique de Djerba (et accord pour la citer) |
 
 ## 2. Identité visuelle (la sienne, pas la nôtre)
 
@@ -127,14 +129,43 @@ Fait :
   à l'apparition), « Votre dentiste », fiche « prothèse stabilisée par 2 implants », formulaire de RDV (validation
   seulement, **n'envoie rien**), carte Google + itinéraire, boutons flottants WhatsApp / RDV, apparitions au défilement.
   Polices : Fraunces (titres), Plus Jakarta Sans (texte), Caveat (slogans). Couleurs : bleu nuit `#16325c`, or `#c9a24b`.
-- Aperçu local : serveur statique sur le port 3470.
+- **Version arabe complète** (`site/ar/index.html`, `dir="rtl"`) : mêmes sections, textes en arabe repris de ses
+  propres formulations (« ابتسامتك .. أولويتنا », intitulés des spécialités), fiche implants en arabe, curseur avant/après
+  inversé (« قبل » à droite). Polices arabes : Amiri (titres), IBM Plex Sans Arabic (texte), Aref Ruqaa (slogans).
+  `styles.css` passe aux propriétés logiques (`inset-inline-*`, `margin-inline-*`) : un seul fichier pour les deux sens.
+  `main.js` lit `<html lang>` pour les textes (cas, messages, WhatsApp). Liens `hreflang` FR ↔ AR.
+- **Logo détouré** (`tools/extract-logo.py`) : `site/img/logo.png` (bleu et or) et `logo-blanc.png` (pied de page),
+  fond transparent, sans halo — en attendant le fichier vectoriel officiel.
+- **Coordonnées réelles** : téléphone et WhatsApp branchés (`CABINET` dans `main.js`), carte et itinéraire sur sa propre
+  fiche Google Maps (note 4,8), bouton « Voir la fiche Google Maps ». Ligne « patients de Médenine, Djerba… » retirée (demande de Talel).
+- **Captures pour Dr Nouha** dans `apercus/` (hors git) : ordinateur et téléphone, FR et AR. Carte « Médenine » du héros
+  déplacée en bas de la photo (elle cachait son visage).
+- **Espace cabinet local** (`app/`) : copie de la démo `dental-clinic` à son nom (clés de stockage `cn_`, ses coordonnées,
+  elle + une assistante), aperçu `node tools/serve.js 3475 app` (config « nouha-cabinet »). **La démo Vercel reste générique**
+  (clients internationaux) : rien de spécifique à la Tunisie ou au cabinet n'y est ajouté.
+  Fonctions vues dans la vidéo « Smart Clinic » qu'elle a reçue, ajoutées ici (`app/js/cabinet-plus.js`, `app/css/cabinet-plus.css`),
+  à reprendre dans la vraie version chiffrée : salle d'attente en temps réel
+  (arrivé → fauteuil → terminé, durées d'attente et de soin, alertes allergies/anticoagulants), agenda semaine,
+  demandes de RDV en ligne (planifier, créer la fiche, répondre par WhatsApp), prothèses et laboratoires (suivi des travaux,
+  retards, soldes dus), tâches avec priorités, caisse et dépenses (rapport journalier imprimable, chèques émis),
+  ordonnances A5 avec médicaments favoris, certificats, devis, **bulletin de soins CNAM** pré-rempli (assuré, malade,
+  soins, prothèses, schéma dentaire adulte et temporaire), galerie avant/après avec consentement de publication.
+  Non repris : orthodontie, appli mobile patient, passerelle SMS payante (WhatsApp suffit).
+  **Bulletin CNAM** : calé sur le formulaire officiel (recto « soins dentaires » de https://www.cnam.nat.tn/doc/upload/BS1.pdf,
+  image `app/img/cnam-bulletin-dentaire.jpg`), données placées aux positions mesurées sur le PDF, A4 paysage sans marge.
+  Option « Données seules » pour imprimer sur un bulletin pré-imprimé.
+  **Actes & tarifs** : catalogue unique (tarif, code acte CNAM, cotation, prothèse oui/non) + code praticien, modifiable par
+  la dentiste ET l'assistante, enregistré automatiquement ; les codes sont vides au départ, c'est le cabinet qui les remplit.
+  Le bulletin et les soins reprennent automatiquement ces valeurs. À vérifier avec elle : un essai réel sur un bulletin
+  papier (alignement selon son imprimante), son code praticien CNAM, et les codes / cotations qu'elle utilise.
+- Aperçu local : `node tools/serve.js` (sert `dossier/` → `dossier/index.html` comme Cloudflare Pages), port 3471.
 
 Écarté volontairement : l'image de salle de soins de la bannière (semble être une illustration, pas son cabinet).
 
 Reste à faire en priorité :
 1. Créer le dépôt GitHub privé, pousser, mettre l'aperçu en ligne sur Cloudflare Pages pour le montrer à Dr Nouha.
-2. Version arabe complète (RTL) — le bouton « عربي » affiche pour l'instant « bientôt ».
-3. Compléter téléphone / WhatsApp / horaires (constante `CABINET` en haut de `site/main.js`).
+2. Faire relire les textes arabes par Dr Nouha (formulations médicales, ton).
+3. Compléter les horaires (section Accès des deux pages).
 4. Faire valider les textes (descriptions des cas, points « Votre dentiste ») et les consentements des patients.
 5. Puis le socle sécurité et l'espace cabinet (étapes 3 à 6 ci-dessous).
 
