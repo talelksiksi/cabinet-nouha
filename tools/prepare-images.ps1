@@ -44,11 +44,10 @@ foreach ($p in @('equipe\dr-nouha-ksiksi-portrait', 'cabinet\chirurgie-implant-s
   Save-Crop $img 0 0 $img.Width $img.Height (Join-Path $out "photos\$(Split-Path $p -Leaf).jpg") 1000
   $img.Dispose()
 }
-# Bannière (pour la salle, en arrière-plan) et fiche FR
-$img = [System.Drawing.Image]::FromFile((Join-Path $src 'marque\banniere-cabinet-bleu-or.jpg'))
-Save-Crop $img 395 20 250 196 (Join-Path $out 'logo-banniere.jpg') 250
-$img.Dispose()
-$img = [System.Drawing.Image]::FromFile((Join-Path $src 'marque\fiche-prothese-implants-fr.jpg'))
-Save-Crop $img 0 0 $img.Width $img.Height (Join-Path $out 'photos\fiche-prothese-implants-fr.jpg') 900
-$img.Dispose()
+# Fiches FR/AR (le logo est détouré à part : tools/extract-logo.py)
+foreach ($l in 'fr', 'ar') {
+  $img = [System.Drawing.Image]::FromFile((Join-Path $src "marque\fiche-prothese-implants-$l.jpg"))
+  Save-Crop $img 0 0 $img.Width $img.Height (Join-Path $out "photos\fiche-prothese-implants-$l.jpg") 900
+  $img.Dispose()
+}
 Get-ChildItem $out -Recurse -File | ForEach-Object { '{0,-52} {1,5:N0} Ko' -f $_.FullName.Replace("$out\", ''), ($_.Length / 1KB) }
