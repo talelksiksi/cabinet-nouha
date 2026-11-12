@@ -19,7 +19,7 @@ before(async () => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cabinet-test-'));
   fs.mkdirSync(path.join(dir, 'usb'));
   cfg = loadConfig({ dataDir: path.join(dir, 'data'), usbDrives: () => ['Z:'], usbRoot: () => usbDir() });
-  app = createApp(cfg, { log: () => {}, secure: false });
+  app = createApp(cfg, { log: () => {} });
   server = http.createServer(app.handler);
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   base = `http://127.0.0.1:${server.address().port}`;

@@ -7,126 +7,33 @@
 const COLORS = ['#3d6d78','#2f5a46','#c4805a','#1f2e2f','#5a8f9b','#5f8a6c','#a0674a','#46636a'];
 const colorFor = str => COLORS[(str||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0) % COLORS.length];
 
-/* ── Comptes provisoires (la vraie authentification arrive avec le socle sécurité, PLAN.md §6) ── */
-const USERS = {
-  dentiste:   { password:'sourire', name:'Dr Nouha Ksiksi', label:'Dentiste',   initials:'NK', greet:'Docteur',
-                welcome:'Bonjour Docteur, bonne journée au cabinet.' },
-  assistante: { password:'molaire', name:'Assistante',        label:'Assistante', initials:'AS', greet:'à vous',
-                welcome:'Bonjour ! Les rapports et réglages sont réservés au Docteur, tout le reste est accessible.' },
-};
-
 /* ══════════════════════════════════════════
-   DB — Couche localStorage
+   DB — données chiffrées, synchronisées avec le serveur du cabinet (js/secure/session.mjs)
+   Même interface qu'avant : chaque lecture renvoie une copie, chaque écriture est chiffrée puis envoyée.
 ══════════════════════════════════════════ */
 const DB = {
-  get(k)      { try { return JSON.parse(localStorage.getItem('cn_'+k)) || []; } catch { return []; } },
-  set(k,v)    { localStorage.setItem('cn_'+k, JSON.stringify(v)); },
-  nextId(k)   { const n=(parseInt(localStorage.getItem('cn_id_'+k)||'0')+1); localStorage.setItem('cn_id_'+k,n); return n; },
+  get(k)      { return CabinetStore.get(k); },
+  set(k,v)    { CabinetStore.set(k,v); },
+  nextId()    { return CabinetStore.newId(); },
   patients()     { return this.get('patients'); },
   appointments() { return this.get('appointments'); },
   treatments()   { return this.get('treatments'); },
   payments()     { return this.get('payments'); },
-  staff()        { return this.get('staff'); },
-  settings()     { try { return JSON.parse(localStorage.getItem('cn_settings'))||{}; } catch { return {}; } },
+  staff()        { return CabinetStore.staff(); },
+  settings()     { return CabinetStore.getSettings(); },
   activity()     { return this.get('activity'); },
   savePatients(d)     { this.set('patients',d); },
   saveAppointments(d) { this.set('appointments',d); },
   saveTreatments(d)   { this.set('treatments',d); },
   savePayments(d)     { this.set('payments',d); },
-  saveStaff(d)        { this.set('staff',d); },
-  saveSettings(d)     { localStorage.setItem('cn_settings', JSON.stringify(d)); },
+  saveStaff()         { /* l'équipe se gère dans « Utilisateurs » */ },
+  saveSettings(d)     { CabinetStore.setSettings(d); },
   logActivity(type, text) {
     const acts = this.activity();
-    acts.unshift({ type, text, time: new Date().toISOString() });
-    this.set('activity', acts.slice(0,40));
+    acts.unshift({ id: CabinetStore.newId(), type, text, time: new Date().toISOString(), by: Secure.user?.displayName || '' });
+    this.set('activity', acts.slice(0,60));
   }
 };
-
-/* ══════════════════════════════════════════
-   DONNÉES D'EXEMPLE
-══════════════════════════════════════════ */
-const SEED_VERSION = '5';
-function clearDemoData() {
-  Object.keys(localStorage).filter(k=>k.startsWith('cn_')).forEach(k=>localStorage.removeItem(k));
-}
-function seedData() {
-  if (localStorage.getItem('cn_seed_version')!==SEED_VERSION) clearDemoData();
-  if (DB.get('seeded').length) return;
-  localStorage.setItem('cn_seed_version', SEED_VERSION);
-
-  DB.set('staff',[
-    {id:1,firstName:'Nouha',     lastName:'Ksiksi', role:'Dentiste',            phone:'+216 23 232 407',email:'',license:'',exp:0,notes:'Chirurgie et implantologie, esthétique du sourire, prothèse fixe et mobile.'},
-    {id:6,firstName:'Assistante',lastName:'',       role:'Assistante dentaire', phone:'',email:'',license:'',exp:0,notes:'Accueil, agenda, stérilisation et préparation du fauteuil.'},
-  ]);
-  localStorage.setItem('cn_id_staff','6');
-
-  DB.set('patients',[
-    {id:1,firstName:'Amira',   lastName:'Ben Salah', dob:'1985-03-22',gender:'Féminin',   phone:'+216 98 301 001',email:'amira.bensalah@exemple.tn',   address:'45 Rue de Marseille, Tunis',        bloodType:'A+', occupation:'Enseignante', referredBy:'Dr Kamoun',patientSince:'2020-01-15',allergies:'Pénicilline',          medications:'Aucun',          conditions:'Anxiété légère',                     dentalHistory:'Deux obturations en 2019',          smoker:'Non',lastVisit:'2024-11-10',notes:'Préfère les rendez-vous le matin.',emergencyName:'Omar Ben Salah',   emergencyPhone:'+216 55 901 001',emergencyRelation:'Époux',   emergencyEmail:'',createdAt:'2020-01-15T09:00:00Z'},
-    {id:2,firstName:'Sofiene', lastName:'Hammami',   dob:'1978-07-14',gender:'Masculin',  phone:'+216 98 301 002',email:'s.hammami@exemple.tn',  address:'12 Avenue Hédi Chaker, Sfax',     bloodType:'O+', occupation:'Ingénieur',   referredBy:'',           patientSince:'2021-03-10',allergies:'Latex',               medications:'Lisinopril 10mg',conditions:'Hypertension, Diabète type 2',        dentalHistory:'Traitement canalaire sur la 14 en 2020',  smoker:'Non',lastVisit:'2024-12-01',notes:'Vérifier la tension avant les soins.', emergencyName:'Nadia Hammami',    emergencyPhone:'+216 55 901 002',emergencyRelation:'Épouse',  emergencyEmail:'',createdAt:'2021-03-10T10:00:00Z'},
-    {id:3,firstName:'Yosra',   lastName:'Chaabane',   dob:'1995-11-30',gender:'Féminin',   phone:'+216 98 301 003',email:'yosra.c@exemple.tn',  address:'8 Rue Ibn Khaldoun, Sousse',bloodType:'B+',occupation:'Infirmière',referredBy:'Amira Ben Salah',patientSince:'2022-06-20',allergies:'Aucune',           medications:'Aucun',          conditions:'Aucune',                             dentalHistory:'Appareil orthodontique adolescence',smoker:'Non',lastVisit:'2025-01-15',notes:'Très bonne compliance.',                emergencyName:'Hamadi Chaabane',    emergencyPhone:'+216 55 901 003',emergencyRelation:'Père',    emergencyEmail:'',createdAt:'2022-06-20T11:00:00Z'},
-    {id:4,firstName:'Noureddine',lastName:'Ayari'   ,dob:'1962-04-08',gender:'Masculin',  phone:'+216 98 301 004',email:'n.ayari@exemple.tn', address:'33 Avenue Farhat Hached, Gabès',bloodType:'AB+',occupation:'Retraité',  referredBy:'',           patientSince:'2019-09-05',allergies:'Aspirine, Sulfamides', medications:'Warfarine, Metformine, Atorvastatine',conditions:'Cardiopathie, Diabète, Hypertension',dentalHistory:'Plusieurs extractions, prothèse partielle haute',smoker:'Oui',lastVisit:'2024-10-20',notes:'Warfarine — vérifier l\'INR avant extraction.',emergencyName:'Habiba Ayari',emergencyPhone:'+216 55 901 004',emergencyRelation:'Épouse',  emergencyEmail:'',createdAt:'2019-09-05T08:00:00Z'},
-    {id:5,firstName:'Rania',   lastName:'Mejri'    , dob:'2001-08-19',gender:'Féminin',   phone:'+216 98 301 005',email:'rania.mejri@exemple.tn',    address:'7 Rue de Djerba, Médenine',        bloodType:'O-', occupation:'Étudiante',  referredBy:'Yosra Chaabane',patientSince:'2023-02-14',allergies:'Aucune',           medications:'Aucun',          conditions:'Aucune',                             dentalHistory:'Aucun antécédent dentaire',          smoker:'Non',lastVisit:'2025-02-28',notes:'Première patiente, légère anxiété dentaire.',emergencyName:'Samira Mejri',emergencyPhone:'+216 55 901 005',emergencyRelation:'Mère',    emergencyEmail:'',createdAt:'2023-02-14T14:00:00Z'},
-    {id:6,firstName:'Tarek',   lastName:'Zouari',  dob:'1970-12-03',gender:'Masculin',  phone:'+216 98 301 006',email:'t.zouari@exemple.tn',  address:'19 Rue Ali Belhouane, Nabeul',  bloodType:'A-', occupation:'Comptable',  referredBy:'',           patientSince:'2020-11-22',allergies:'Codéine',             medications:'Aucun',          conditions:'Aucune',                             dentalHistory:'Couronne sur la 46 en 2021',           smoker:'Non',lastVisit:'2025-01-08',notes:'',emergencyName:'Sonia Zouari',emergencyPhone:'+216 55 901 006',emergencyRelation:'Épouse',  emergencyEmail:'',createdAt:'2020-11-22T13:00:00Z'},
-  ]);
-  localStorage.setItem('cn_id_patients','6');
-
-  const today     = new Date();
-  const fmt       = d => d.toISOString().split('T')[0];
-  const td        = fmt(today);
-  const tomorrow  = fmt(new Date(today.getTime()+86400000));
-  const yesterday = fmt(new Date(today.getTime()-86400000));
-
-  DB.set('appointments',[
-    {id:1,patientId:1,dentistId:1,date:td,       time:'09:00',duration:30, service:'Bilan & Détartrage',           status:'Confirmé',  notes:'Bilan annuel',                         reminder:'1day',  createdAt:new Date().toISOString()},
-    {id:2,patientId:2,dentistId:1,date:td,       time:'10:30',duration:60, service:'Traitement canalaire',          status:'En cours',  notes:'Dent 36, 2ème séance',                reminder:'none',  createdAt:new Date().toISOString()},
-    {id:3,patientId:3,dentistId:1,date:td,       time:'14:00',duration:45, service:'Obturation composite',          status:'Planifié',  notes:'Carie sur 12',                        reminder:'2hours',createdAt:new Date().toISOString()},
-    {id:4,patientId:4,dentistId:1,date:td,       time:'15:30',duration:90, service:'Extraction dentaire',           status:'Planifié',  notes:'Extraction 16 — vérifier Warfarine',  reminder:'1day',  createdAt:new Date().toISOString()},
-    {id:5,patientId:5,dentistId:1,date:tomorrow, time:'09:30',duration:30, service:'Bilan & Détartrage',            status:'Planifié',  notes:'Première séance de détartrage',         reminder:'1day',  createdAt:new Date().toISOString()},
-    {id:6,patientId:6,dentistId:1,date:tomorrow, time:'11:00',duration:45, service:'Pose de couronne',               status:'Confirmé',  notes:'Couronne définitive sur 46',           reminder:'2hours',createdAt:new Date().toISOString()},
-    {id:7,patientId:1,dentistId:1,date:yesterday,time:'10:00',duration:60, service:'Consultation orthodontique',    status:'Terminé',   notes:'Discussion Invisalign',                 reminder:'none',  createdAt:new Date().toISOString()},
-    {id:8,patientId:2,dentistId:1,date:yesterday,time:'14:30',duration:60, service:'Traitement canalaire',          status:'Terminé',   notes:'1ère séance',                           reminder:'none',  createdAt:new Date().toISOString()},
-  ]);
-  localStorage.setItem('cn_id_appointments','8');
-
-  DB.set('treatments',[
-    {id:1,patientId:1,dentistId:1,date:yesterday,    teeth:['11','12','21','22','31','41'],procedure:'Détartrage & Polissage',  description:'Prophylaxie complète, tartre léger',                   notes:'Bonne hygiène bucco-dentaire.',               followup:'Brossage 2x/jour, fil dentaire 1x/jour.',       cost:70,  status:'Terminé',  createdAt:new Date().toISOString()},
-    {id:2,patientId:2,dentistId:1,date:yesterday,    teeth:['36'],           procedure:'Traitement canalaire',    description:'Préparation biomécanique et obturation de la 36',     notes:'3 canaux. Patient bien toléré.',               followup:'Ibuprofène 400mg si douleur. Retour dans 2 sem.', cost:250, status:'En cours', createdAt:new Date().toISOString()},
-    {id:3,patientId:3,dentistId:1,date:fmt(new Date(today.getTime()-7*86400000)),  teeth:['12'],procedure:'Obturation composite',  description:'Restauration composite classe II',                     notes:'Carie MO, teinte A2.',                         followup:'Éviter les aliments durs pendant 24h.',          cost:80,  status:'Terminé',  createdAt:new Date().toISOString()},
-    {id:4,patientId:6,dentistId:1,date:fmt(new Date(today.getTime()-14*86400000)), teeth:['46'],procedure:'Préparation de couronne',description:'Préparation couronne céramique intégrale, temporaire posée',notes:'Préparation sous digue. Temporaire collée.',followup:'Éviter les aliments collants. Retour dans 2 sem.',cost:450, status:'Terminé',  createdAt:new Date().toISOString()},
-    {id:5,patientId:4,dentistId:1,date:fmt(new Date(today.getTime()-30*86400000)), teeth:['14','15'],procedure:'Extraction chirurgicale',description:'Extraction chirurgicale 14 et 15',               notes:'INR 2,1 — dans les limites. Hémostase obtenue.',followup:'Compresse 30 min. Alimentation molle 3 j. Amoxicilline 500mg x7.',cost:180, status:'Terminé',createdAt:new Date().toISOString()},
-  ]);
-  localStorage.setItem('cn_id_treatments','5');
-
-  DB.set('payments',[
-    {id:1,patientId:1,date:yesterday,   dueDate:'',method:'Espèces',        status:'Payé',       paidAmount:70,   discount:0,notes:'',invoiceNumber:'FAC-001',items:[{description:'Détartrage & Polissage',amount:70}],  createdAt:new Date().toISOString()},
-    {id:2,patientId:2,date:yesterday,   dueDate:fmt(new Date(today.getTime()+14*86400000)),method:'CNAM / Assurance',status:'Partiel',paidAmount:150,discount:0,notes:'Bulletin de soins CNAM transmis.',invoiceNumber:'FAC-002',items:[{description:'Traitement canalaire - Séance 1',amount:250}],createdAt:new Date().toISOString()},
-    {id:3,patientId:3,date:fmt(new Date(today.getTime()-7*86400000)), dueDate:'',method:'Espèces', status:'Payé',paidAmount:80,discount:0,notes:'',invoiceNumber:'FAC-003',items:[{description:'Obturation composite 12',amount:80}],createdAt:new Date().toISOString()},
-    {id:4,patientId:6,date:fmt(new Date(today.getTime()-14*86400000)),dueDate:td,method:'Carte de débit',status:'Partiel',paidAmount:200,discount:5,notes:'Solde dû à la pose de couronne.',invoiceNumber:'FAC-004',items:[{description:'Préparation couronne',amount:450},{description:'Couronne provisoire',amount:40}],createdAt:new Date().toISOString()},
-    {id:5,patientId:4,date:fmt(new Date(today.getTime()-30*86400000)),dueDate:'',method:'Espèces',status:'Payé',paidAmount:180,discount:0,notes:'',invoiceNumber:'FAC-005',items:[{description:'Extraction chirurgicale 14',amount:90},{description:'Extraction chirurgicale 15',amount:90}],createdAt:new Date().toISOString()},
-  ]);
-  localStorage.setItem('cn_id_payments','5');
-  localStorage.setItem('cn_id_invoices','5');
-
-  // États dentaires saisis manuellement (en plus de ceux déduits des soins)
-  localStorage.setItem('cn_chart', JSON.stringify({
-    1:{ '26':{state:'caries',note:'Carie occlusale débutante, à surveiller.'}, '37':{state:'filled',note:'Ancienne obturation (2019).'} },
-    2:{ '47':{state:'filled',note:''} },
-    4:{ '24':{state:'extracted',note:'Remplacée par prothèse partielle.'}, '25':{state:'extracted',note:''}, '36':{state:'crown',note:''} },
-    6:{ '17':{state:'filled',note:''}, '27':{state:'caries',note:'Proposer obturation au prochain RDV.'} },
-  }));
-
-  const ago = m => new Date(Date.now()-m*60000).toISOString();
-  DB.set('activity',[
-    {type:'appt',     text:'RDV de Sofiene Hammami : statut → En cours', time:ago(12)},
-    {type:'payment',  text:'Facture FAC-004 : acompte de 200,000 DT reçu', time:ago(95)},
-    {type:'treatment',text:'Détartrage & Polissage effectué sur Amira Ben Salah', time:ago(60*20)},
-    {type:'patient',  text:'Nouvelle patiente enregistrée : Rania Mejri', time:ago(60*26)},
-    {type:'appt',     text:'Nouveau RDV pour Tarek Zouari demain à 11:00', time:ago(60*30)},
-  ]);
-
-  seedPlus();
-  DB.set('seeded',[true]);
-}
 
 /* ══════════════════════════════════════════
    UTILITAIRES
@@ -148,12 +55,12 @@ const Utils = {
     return Math.round(parseFloat(n||0)).toLocaleString('fr-FR')+' DT';
   },
   patientName(id) {
-    const p = DB.patients().find(x=>x.id==id);
+    const p = CabinetStore.find('patients', id);
     return p ? p.firstName+' '+p.lastName : 'Inconnu';
   },
   dentistName(id) {
-    const s = DB.staff().find(x=>x.id==id);
-    return s ? 'Dr '+s.firstName+' '+s.lastName : 'Inconnu';
+    const s = (Secure.directory||[]).find(x=>x.id==id);
+    return s ? (/^dr\b/i.test(s.displayName) ? s.displayName : 'Dr '+s.displayName) : '—';
   },
   statusBadge(status) {
     const map = {
@@ -182,8 +89,6 @@ const App = {
 
   init() {
     if (window.Chart) { Chart.defaults.font.family = "'Archivo', system-ui, sans-serif"; Chart.defaults.color = '#4a5a5b'; }
-    seedData();
-    this._bindLogin();
     this._bindNav();
     this._bindSearch();
     this._bindMobileMenu();
@@ -195,95 +100,41 @@ const App = {
       document.querySelectorAll('.modal').forEach(m=>m.style.display='none');
       document.getElementById('modal-overlay').classList.add('hidden');
       document.getElementById('notif-panel').classList.add('hidden');
-      document.getElementById('hint-bubble').classList.add('hidden');
     });
     document.getElementById('topbar-date').textContent =
       new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    this.applyClinicName();
-    // Session conservée pendant l'onglet (rechargement de page)
-    let saved=null; try { saved=sessionStorage.getItem('cn_session'); } catch {}
-    if (saved && USERS[saved]) this._login(saved);
+    document.getElementById('logout-btn').addEventListener('click',()=>Secure.logout());
+    this._ready = true;
+    window.dispatchEvent(new Event('app-ready'));
   },
 
-  role: null,
-
-  _bindLogin() {
-    const userInp=document.getElementById('login-user');
-    const passInp=document.getElementById('login-pass');
-    const err=document.getElementById('login-error');
-    const setRole=r=>{
-      document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.role===r));
-      userInp.placeholder=r;
-    };
-    document.querySelectorAll('.role-btn').forEach(btn=>btn.addEventListener('click',()=>{
-      setRole(btn.dataset.role);
-      if (!userInp.value || USERS[userInp.value.trim().toLowerCase()]) userInp.value=btn.dataset.role;
-      passInp.focus();
-    }));
-    userInp.addEventListener('input',()=>{ const u=userInp.value.trim().toLowerCase(); if (USERS[u]) setRole(u); });
-    document.getElementById('hint-btn').addEventListener('click',e=>{
-      e.stopPropagation();
-      document.getElementById('hint-bubble').classList.toggle('hidden');
-    });
-    document.querySelectorAll('.hint-fill').forEach(b=>b.addEventListener('click',()=>{
-      userInp.value=b.dataset.u; passInp.value=b.dataset.p; setRole(b.dataset.r);
-      document.getElementById('hint-bubble').classList.add('hidden');
-      err.classList.add('hidden');
-    }));
-    document.getElementById('login-form').addEventListener('submit',e=>{
-      e.preventDefault();
-      const u=userInp.value.trim().toLowerCase();
-      const p=passInp.value;
-      const card=document.querySelector('.login-card');
-      if (!USERS[u] || USERS[u].password!==p) {
-        const jokes=[
-          'Identifiants incorrects. Même la fraise du dentiste ne passerait pas.',
-          'Raté ! Essayez l\'ampoule à côté du mot de passe 💡',
-          'Accès refusé. Ouvrez grand… vos yeux, et relisez l\'indice.',
-        ];
-        err.textContent=!USERS[u]?'Seuls « dentiste » et « assistante » ont les clés du cabinet.':jokes[Math.floor(Math.random()*jokes.length)];
-        err.classList.remove('hidden');
-        card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
-        return;
-      }
-      err.classList.add('hidden');
-      passInp.value='';
-      this._login(u);
-    });
-    document.getElementById('logout-btn').addEventListener('click',()=>this.logout());
-  },
-
-  _login(username) {
-    const user=USERS[username]; if (!user) return;
-    this.role=username;
-    try { sessionStorage.setItem('cn_session',username); } catch {}
-    document.body.classList.toggle('role-assistante', username==='assistante');
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').classList.remove('hidden');
-    document.getElementById('sidebar-user-name').textContent = user.name;
-    document.getElementById('sidebar-user-role').textContent = user.label;
-    document.getElementById('sidebar-avatar').textContent = user.initials;
-    document.getElementById('greeting-name').textContent = user.greet;
+  /** Appelé par la session sécurisée une fois les dossiers déchiffrés. */
+  startSession(user) {
+    const initials = user.displayName.replace(/^Dr\.?\s+/i,'').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('sidebar-user-name').textContent = user.displayName;
+    document.getElementById('sidebar-user-role').textContent = user.kind==='superadmin' ? 'Administrateur informatique' : (user.roleLabel || (user.kind==='admin' ? 'Administratrice' : 'Personnel'));
+    document.getElementById('sidebar-avatar').textContent = initials;
+    document.getElementById('greeting-name').textContent = Secure.isDentist() ? 'Docteur' : user.displayName.split(' ')[0];
     const h = new Date().getHours();
     document.getElementById('greeting-time').textContent = h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';
-    this.navigate('dashboard');
+    // Menu : uniquement les pages autorisées pour ce compte
+    document.querySelectorAll('.nav-item[data-page]').forEach(n=>n.classList.toggle('hidden', !Secure.canPage(n.dataset.page)));
+    document.querySelectorAll('.nav-section-label').forEach(l=>{
+      let n=l.nextElementSibling, any=false;
+      while (n && !n.classList.contains('nav-section-label')) { if (n.classList.contains('nav-item') && !n.classList.contains('hidden')) any=true; n=n.nextElementSibling; }
+      l.classList.toggle('hidden', !any);
+    });
+    // Chiffres d'argent du tableau de bord : seulement pour qui voit la facturation
+    const money = Secure.can('billing');
+    for (const id of ['stat-monthly-revenue','stat-pending-payments']) document.getElementById(id)?.closest('.stat-card')?.classList.toggle('hidden', !money);
+    document.getElementById('revenue-chart')?.closest('.card')?.classList.toggle('hidden', !money);
+    this.applyClinicName();
+    this.navigate(user.kind==='superadmin' ? 'users' : 'dashboard');
     this.updateBadges();
-    if (!this._welcomed) { this._welcomed=true; setTimeout(()=>this.toast(user.welcome,'info'),400); }
+    if (!this._welcomed) { this._welcomed=true; setTimeout(()=>this.toast(user.kind==='superadmin' ? 'Console d\'administration : comptes, journal et sauvegardes. Aucun accès aux dossiers des patients.' : `Bonjour ${user.displayName.split(' ')[0]} ! Les dossiers sont déchiffrés sur cet appareil uniquement.`,'info'),400); }
   },
 
-  logout() {
-    try { sessionStorage.removeItem('cn_session'); } catch {}
-    this.role=null; this._welcomed=false;
-    document.body.classList.remove('role-assistante');
-    document.querySelectorAll('.modal').forEach(m=>m.style.display='none');
-    document.getElementById('modal-overlay').classList.add('hidden');
-    document.getElementById('notif-panel').classList.add('hidden');
-    document.getElementById('login-screen').style.display='';
-    document.getElementById('app').classList.add('hidden');
-    document.getElementById('login-pass').value='';
-  },
-
-  can(page) { return this.role!=='assistante' || !['reports','staff','settings'].includes(page); },
+  can(page) { return Secure.canPage(page); },
 
   applyClinicName() {
     const n=(DB.settings().clinicName||'Dr Nouha Ksiksi').replace(/^cabinet dentaire\s+/i,'');
@@ -304,7 +155,6 @@ const App = {
     panel.addEventListener('click',e=>e.stopPropagation());
     document.addEventListener('click',e=>{
       panel.classList.add('hidden');
-      if (!e.target.closest('#hint-bubble') && !e.target.closest('#hint-btn')) document.getElementById('hint-bubble').classList.add('hidden');
     });
   },
   _renderNotifications() {
@@ -383,7 +233,7 @@ const App = {
   },
 
   navigate(page) {
-    if (!this.can(page)) { this.toast('Section réservée au dentiste. Bien essayé 😉','warning'); return; }
+    if (!this.can(page)) { this.toast('Cette page n\'est pas incluse dans vos accès.','warning'); return; }
     this.currentPage = page;
     window.scrollTo(0,0);
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -395,7 +245,8 @@ const App = {
       appointments:'Rendez-vous', treatments:'Traitements & Soins',
       'dental-chart':'Schéma dentaire', payments:'Paiements & Factures',
       reports:'Rapports & Analyses', staff:'Personnel',
-      settings:'Paramètres', 'patient-detail':'Fiche patient', ...Plus.pages
+      settings:'Paramètres', 'patient-detail':'Fiche patient', ...Plus.pages,
+      users:'Utilisateurs', journal:'Journal d\'activité', system:'Sauvegardes & système', account:'Mon compte'
     };
     document.getElementById('topbar-title').textContent = titles[page]||page;
 
@@ -405,8 +256,8 @@ const App = {
     if (page==='treatments')   { Treatments.populateFilters();   Treatments.render(); }
     if (page==='payments')     Payments.render();
     if (page==='reports')      Reports.render();
-    if (page==='staff')        Staff.render();
     if (page==='settings')     Settings.render();
+    if (['users','journal','system','account'].includes(page)) Admin.render(page);
     Plus.onNavigate(page);
   },
 
@@ -464,7 +315,7 @@ const App = {
     else if (p==='payments') { Payments.render(); Payments.filter(); }
     else if (p==='patients') Patients.filter();
     else if (p==='dashboard') Dashboard.render();
-    else if (p==='staff') Staff.render();
+    else if (['users','journal','system'].includes(p)) Admin.render(p);
     Plus.refresh(p);
     this.updateBadges();
   },
@@ -796,7 +647,7 @@ const Appointments = {
     document.getElementById('appt-edit-id').value='';
     const next=new Date(); next.setMinutes(0,0,0); next.setHours(Math.min(Math.max(next.getHours()+1,8),17));
     const v={patientId:'',dentistId:'',service:'',date:Utils.today(),time:next.toTimeString().slice(0,5),duration:30,status:'Planifié',reminder:'1day',notes:'',...prefill};
-    if (!v.dentistId && App.role==='dentiste') v.dentistId=1;
+    if (!v.dentistId && Secure.isDentist()) v.dentistId=Secure.user.id;
     this._fill(v);
     App.openModal('modal-add-appointment');
   },
@@ -896,7 +747,7 @@ const Appointments = {
   },
   save() {
     const pid=parseInt(document.getElementById('appt-patient-id').value);
-    const did=parseInt(document.getElementById('appt-dentist-id').value);
+    const did=document.getElementById('appt-dentist-id').value;
     const svc=document.getElementById('appt-service').value;
     const dt=document.getElementById('appt-date').value;
     const tm=document.getElementById('appt-time').value;
@@ -1008,7 +859,7 @@ const Treatments = {
     this.populateFilters();
     document.getElementById('modal-treat-title').innerHTML='<i class="fa-solid fa-syringe"></i> Saisir un soin';
     document.getElementById('treat-edit-id').value='';
-    const v={patientId:'',dentistId:App.role==='dentiste'?1:'',date:Utils.today(),procedure:'',cost:'',status:'Terminé',notes:'',followup:'',teeth:[],...prefill};
+    const v={patientId:'',dentistId:Secure.isDentist()?Secure.user.id:'',date:Utils.today(),procedure:'',cost:'',status:'Terminé',notes:'',followup:'',teeth:[],...prefill};
     this._fill(v);
     App.openModal('modal-add-treatment');
   },
@@ -1033,7 +884,7 @@ const Treatments = {
   },
   save() {
     const pid=parseInt(document.getElementById('treat-patient-id').value);
-    const did=parseInt(document.getElementById('treat-dentist-id').value);
+    const did=document.getElementById('treat-dentist-id').value;
     const proc=document.getElementById('treat-procedure').value;
     const dt=document.getElementById('treat-date').value;
     if (!pid||!did||!proc||!dt) { App.toast('Veuillez remplir tous les champs obligatoires','error'); return; }
@@ -1085,8 +936,8 @@ const PROC_TO_STATE = {
 
 const DentalChart = {
   pid: null,
-  all()        { try { return JSON.parse(localStorage.getItem('cn_chart'))||{}; } catch { return {}; } },
-  saveAll(d)   { localStorage.setItem('cn_chart', JSON.stringify(d)); },
+  all()        { return CabinetStore.get('chart'); },
+  saveAll(d)   { CabinetStore.set('chart', d); },
   manual(pid)  { return this.all()[pid]||{}; },
 
   /* État de chaque dent : saisie manuelle prioritaire, sinon déduit des soins (le plus récent l'emporte) */
@@ -1167,8 +1018,8 @@ const DentalChart = {
 ══════════════════════════════════════════ */
 const Files = {
   MAX: 1.5*1024*1024,
-  all()       { try { return JSON.parse(localStorage.getItem('cn_files'))||[]; } catch { return []; } },
-  saveAll(d)  { localStorage.setItem('cn_files', JSON.stringify(d)); },
+  all()       { return CabinetStore.get('files'); },
+  saveAll(d)  { CabinetStore.set('files', d); },
   removeForPatient(pid) { this.saveAll(this.all().filter(f=>f.patientId!=pid)); },
 
   render(pid) {
@@ -1222,6 +1073,8 @@ const Files = {
    PAIEMENTS
 ══════════════════════════════════════════ */
 const Payments = {
+  _nextInv: null,
+  _prefetchInv() { if (!Secure.can('billing','edit')) return; Secure.nextSeq('invoice').then(r=>{ this._nextInv=`FAC-${r.year}-${String(r.n).padStart(4,'0')}`; }).catch(()=>{}); },
   render() {
     const pays=DB.payments();
     const ps=document.getElementById('pay-patient-id');
@@ -1329,6 +1182,7 @@ const Payments = {
     App.openModal('modal-add-payment');
   },
   openNew(prefill={}) {
+    this._prefetchInv();
     this._openAdd();
     if (prefill.patientId) document.getElementById('pay-patient-id').value=prefill.patientId;
     App.openModal('modal-add-payment');
@@ -1356,7 +1210,8 @@ const Payments = {
       DB.logActivity('payment',`Facture ${pays[i].invoiceNumber} modifiée (${data.status})`);
     } else {
       const id=DB.nextId('payments');
-      const inv='FAC-'+String(id).padStart(3,'0');
+      const inv=this._nextInv || ('FAC-'+new Date().getFullYear()+'-'+String(id).slice(-5));
+      this._nextInv=null; this._prefetchInv();
       pays.push({id,invoiceNumber:inv,...data,createdAt:new Date().toISOString()});
       DB.savePayments(pays);
       DB.logActivity('payment',`Facture ${inv} créée pour ${Utils.patientName(pid)}`);
@@ -1568,15 +1423,7 @@ const Settings = {
     App.applyClinicName();
     App.toast('Paramètres enregistrés');
   },
-  resetDemo() {
-    App.confirmDelete('Réinitialiser ? Toutes les modifications seront effacées et les données d\'exemple restaurées.',()=>{
-      clearDemoData(); seedData();
-      App._notifRead=false;
-      App.applyClinicName();
-      App.toast('Données d\'exemple restaurées');
-      App.navigate('dashboard');
-    });
-  }
+
 };
 
 /* ── Démarrage ── */

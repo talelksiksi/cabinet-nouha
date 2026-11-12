@@ -38,6 +38,7 @@ export function loadConfig(overrides = {}) {
     backupSlots: [[11, 30], [15, 45]],
     usbReminder: { weekday: 2, hour: 11, minute: 0 },   // mardi 11 h 00
     session: { idleMs: 30 * 60e3, maxMs: 11 * 3600e3 }, // verrouillage après 30 min d'inactivité (guide INPDP)
+    demo: process.env.CABINET_DEMO === '1',
     secrets,
     ...overrides,
   };

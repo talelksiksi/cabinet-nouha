@@ -5,95 +5,13 @@
    ═══════════════════════════════════════════ */
 'use strict';
 
+const doctorName = () => DB.settings().doctorName || 'Dr Nouha Ksiksi';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const dayISO = (offset = 0) => new Date(Date.now() + offset * 86400000).toISOString().split('T')[0];
 const minsBetween = (a, b) => Math.max(0, Math.round((new Date(b || Date.now()) - new Date(a)) / 60000));
 const fmtMins = m => m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
 const hhmm = iso => iso ? new Date(iso).toTimeString().slice(0, 5) : '—';
 const waLink = (phone, text) => `https://wa.me/${String(phone || '').replace(/\D/g, '')}?text=${encodeURIComponent(text)}`;
-
-/* ══════════════════════════════════════════
-   DONNÉES D'EXEMPLE (appelé par seedData)
-══════════════════════════════════════════ */
-function seedPlus() {
-  const ago = m => new Date(Date.now() - m * 60000).toISOString();
-  const nowTime = () => { const d = new Date(Date.now() - 15 * 60000); return d.toTimeString().slice(0, 5); };
-
-  // Salle d'attente : une patiente terminée, un patient au fauteuil, une patiente qui attend
-  const appts = DB.appointments();
-  const a1 = appts.find(a => a.id === 1); if (a1) Object.assign(a1, { status: 'Terminé', arrivedAt: ago(190), startedAt: ago(178), endedAt: ago(150) });
-  const a2 = appts.find(a => a.id === 2); if (a2) Object.assign(a2, { arrivedAt: ago(48), startedAt: ago(26) });
-  appts.push({ id: 9, patientId: 5, dentistId: 1, date: dayISO(), time: nowTime(), duration: 30, service: 'Consultation / Bilan', status: 'En salle', notes: 'Sensibilité au froid', reminder: 'none', arrivedAt: ago(12), createdAt: ago(60 * 24) });
-  DB.saveAppointments(appts);
-  localStorage.setItem('cn_id_appointments', '9');
-  const pats = DB.patients(); const p2 = pats.find(x => x.id === 2);
-  if (p2) p2.cnam = { id: '07841236/00', regime: 'CNSS', first: 'Sofiene', last: 'Hammami', address: '12 Avenue Hédi Chaker, Sfax', cp: '3000', relation: 'Assuré social' };
-  DB.savePatients(pats);
-  // Encaissements du jour pour le rapport de caisse
-  const pays = DB.payments();
-  pays.push(
-    { id: 6, patientId: 1, date: dayISO(), dueDate: '', method: 'Espèces', status: 'Payé', paidAmount: 70, discount: 0, notes: '', invoiceNumber: 'FAC-006', items: [{ description: 'Bilan & détartrage', amount: 70 }], createdAt: ago(150) },
-    { id: 7, patientId: 2, date: dayISO(), dueDate: '', method: 'CNAM / Assurance', status: 'Partiel', paidAmount: 60, discount: 0, notes: 'Bulletin CNAM remis', invoiceNumber: 'FAC-007', items: [{ description: 'Traitement canalaire 36 — séance 2', amount: 120 }], createdAt: ago(20) });
-  DB.savePayments(pays);
-  localStorage.setItem('cn_id_payments', '7'); localStorage.setItem('cn_id_invoices', '7');
-
-  DB.set('requests', [
-    { id: 1, name: 'Salwa Gharsalli', phone: '+216 97 220 118', motif: 'Douleur ou urgence', day: dayISO(), moment: 'Après-midi', message: 'Douleur forte en bas à gauche depuis hier soir.', status: 'Nouvelle', createdAt: ago(35) },
-    { id: 2, name: 'Mohamed Ali Ben Youssef', phone: '+216 22 410 552', motif: 'Implant', day: dayISO(2), moment: 'Matin', message: 'Il me manque une molaire en bas à droite, je voudrais savoir si un implant est possible.', status: 'Nouvelle', createdAt: ago(130) },
-    { id: 3, name: 'Hela Ferchichi', phone: '+216 54 118 902', motif: 'Esthétique du sourire', day: dayISO(5), moment: 'Peu importe', message: '', status: 'Nouvelle', createdAt: ago(60 * 20) },
-  ]);
-  localStorage.setItem('cn_id_requests', '3');
-
-  DB.set('labs', [
-    { id: 1, name: 'Laboratoire Errahma', contact: 'Hatem', phone: '+216 75 640 210', city: 'Médenine' },
-    { id: 2, name: 'Sud Céramique', contact: 'Mourad', phone: '+216 75 650 330', city: 'Djerba' },
-  ]);
-  localStorage.setItem('cn_id_labs', '2');
-  DB.set('labworks', [
-    { id: 1, patientId: 6, labId: 1, type: 'Couronne céramo-métallique', teeth: '46', shade: 'A2', sentDate: dayISO(-16), dueDate: dayISO(-6), deliveredDate: dayISO(-7), price: 120, status: 'Livré', notes: '' },
-    { id: 2, patientId: 4, labId: 1, type: 'Prothèse partielle amovible', teeth: '24, 25', shade: 'A3', sentDate: dayISO(-9), dueDate: dayISO(3), deliveredDate: '', price: 260, status: 'Essayage', notes: 'Essayage des dents le prochain RDV' },
-    { id: 3, patientId: 2, labId: 2, type: 'Couronne zircone', teeth: '36', shade: 'A2', sentDate: dayISO(-4), dueDate: dayISO(4), deliveredDate: '', price: 180, status: 'Envoyé', notes: '' },
-    { id: 4, patientId: 3, labId: 2, type: 'Bridge 3 éléments', teeth: '11-21-22', shade: 'B1', sentDate: dayISO(-12), dueDate: dayISO(-1), deliveredDate: '', price: 390, status: 'Envoyé', notes: 'Patiente pressée (mariage)' },
-  ]);
-  localStorage.setItem('cn_id_labworks', '4');
-  DB.set('labpayments', [{ id: 1, labId: 1, date: dayISO(-10), amount: 200, method: 'Espèces' }]);
-  localStorage.setItem('cn_id_labpayments', '1');
-
-  DB.set('tasks', [
-    { id: 1, title: 'Relancer Sud Céramique pour le bridge de Yosra', due: dayISO(), priority: 'Urgente', assignee: 'Assistante', done: false },
-    { id: 2, title: 'Commander gants, compresses et fil de suture', due: dayISO(), priority: 'Élevée', assignee: 'Assistante', done: false },
-    { id: 3, title: 'Payer la facture STEG', due: dayISO(1), priority: 'Moyenne', assignee: 'Assistante', done: false },
-    { id: 4, title: 'Test hebdomadaire de l\'autoclave (Bowie-Dick)', due: dayISO(2), priority: 'Moyenne', assignee: 'Assistante', done: false },
-    { id: 5, title: 'Renouveler l\'assurance responsabilité civile', due: dayISO(12), priority: 'Faible', assignee: 'Dentiste', done: false },
-    { id: 6, title: 'Préparer le plan de traitement de M. Ayari', due: dayISO(-1), priority: 'Élevée', assignee: 'Dentiste', done: true },
-  ]);
-  localStorage.setItem('cn_id_tasks', '6');
-
-  const m1 = dayISO().slice(0, 8) + '01';
-  DB.set('expenses', [
-    { id: 1, date: m1, category: 'Loyer', label: 'Loyer du cabinet', amount: 900, method: 'Chèque', chequeNo: '4521087' },
-    { id: 2, date: dayISO(-12), category: 'Salaires', label: 'Salaire assistante', amount: 1100, method: 'Virement', chequeNo: '' },
-    { id: 3, date: dayISO(-10), category: 'Laboratoire', label: 'Règlement Laboratoire Errahma', amount: 200, method: 'Espèces', chequeNo: '', labPaymentId: 1 },
-    { id: 4, date: dayISO(-3), category: 'Factures', label: 'STEG (électricité)', amount: 87.4, method: 'Espèces', chequeNo: '' },
-    { id: 5, date: dayISO(-1), category: 'Fournitures', label: 'Composite, anesthésiques', amount: 320, method: 'Chèque', chequeNo: '4521088' },
-    { id: 6, date: dayISO(), category: 'Fournitures', label: 'Gants et masques', amount: 45.5, method: 'Espèces', chequeNo: '' },
-  ]);
-  localStorage.setItem('cn_id_expenses', '6');
-
-  DB.set('documents', [
-    { id: 1, patientId: 4, type: 'ordonnance', date: dayISO(-30), lines: [
-      { med: 'Amoxicilline 1 g', dose: '1 comprimé matin et soir', dur: '7 jours' },
-      { med: 'Paracétamol 1 g', dose: '1 comprimé si douleur, max 3/jour', dur: '3 jours' },
-      { med: 'Chlorhexidine 0,12 % bain de bouche', dose: '2 fois par jour après brossage', dur: '7 jours' }] },
-  ]);
-  localStorage.setItem('cn_id_documents', '1');
-
-  DB.set('gallery', [
-    { id: 1, patientId: 6, title: 'Couronne céramique sur 46', treatment: 'Prothèse fixe', date: dayISO(-7), before: Gallery.demoImage('avant', 1), after: Gallery.demoImage('apres', 1), consent: true, published: true },
-    { id: 2, patientId: 3, title: 'Fermeture d\'un diastème', treatment: 'Esthétique', date: dayISO(-20), before: Gallery.demoImage('avant', 2), after: Gallery.demoImage('apres', 2), consent: false, published: false },
-  ]);
-  localStorage.setItem('cn_id_gallery', '2');
-}
 
 /* ══════════════════════════════════════════
    POINT D'ENTRÉE (navigation, badges, modales)
@@ -469,7 +387,7 @@ const Tasks = {
   },
   toggle(id) { const l = DB.get('tasks'); const t = l.find(x => x.id == id); t.done = !t.done; DB.set('tasks', l); if (t.done) App.toast('Tâche réalisée ✔'); App.refreshCurrent(); },
   edit(id) {
-    const t = DB.get('tasks').find(x => x.id == id) || { title: '', due: Utils.today(), priority: 'Moyenne', assignee: App.role === 'assistante' ? 'Assistante' : 'Dentiste' };
+    const t = DB.get('tasks').find(x => x.id == id) || { title: '', due: Utils.today(), priority: 'Moyenne', assignee: Secure.isDentist() ? 'Dentiste' : 'Assistante' };
     Plus.modal('modal-task', `<i class="fa-solid fa-list-check"></i> ${id ? 'Modifier la tâche' : 'Nouvelle tâche'}`, `<input type="hidden" id="tk-id" value="${id || ''}"/>
       <div class="form-grid"><div class="form-group form-full"><label>Tâche *</label><input id="tk-title" value="${esc(t.title)}" placeholder="Ex : commander des anesthésiques"/></div>
       <div class="form-group"><label>Échéance</label><input type="date" id="tk-due" value="${t.due || ''}"/></div>
@@ -743,7 +661,7 @@ const Docs = {
   remove(id) { App.confirmDelete('Supprimer ce document ?', () => { DB.set('documents', DB.get('documents').filter(x => x.id != id)); App.toast('Document supprimé', 'warning'); this.render(App.currentPatientId); }); },
   header() {
     const s = DB.settings();
-    return `<div class="doc-head"><div><b>${esc(USERS.dentiste.name)}</b><span>Chirurgien-dentiste</span><span>${esc(s.clinicAddr || '1 Bis Rue Pasteur (en face du CHU Habib Bourguiba)')}</span><span>${esc(s.clinicCity || '4100 Médenine')} · Tél. ${esc(s.clinicPhone || '+216 23 232 407')}</span></div><div class="doc-logo"><i class="fa-solid fa-tooth"></i><span>${esc(s.clinicName || 'Cabinet dentaire Dr Nouha Ksiksi')}</span></div></div>`;
+    return `<div class="doc-head"><div><b>${esc(doctorName())}</b><span>Chirurgien-dentiste</span><span>${esc(s.clinicAddr || '1 Bis Rue Pasteur (en face du CHU Habib Bourguiba)')}</span><span>${esc(s.clinicCity || '4100 Médenine')} · Tél. ${esc(s.clinicPhone || '+216 23 232 407')}</span></div><div class="doc-logo"><i class="fa-solid fa-tooth"></i><span>${esc(s.clinicName || 'Cabinet dentaire Dr Nouha Ksiksi')}</span></div></div>`;
   },
   print(id) {
     if (!id) return;
@@ -756,8 +674,8 @@ const Docs = {
       html += `<div class="doc-title">Ordonnance</div>${who}<ol class="rx-print">${d.lines.map(l => `<li><b>${esc(l.med)}</b><span>${esc(l.dose)}${l.dur ? ' — pendant ' + esc(l.dur) : ''}</span></li>`).join('')}</ol>`;
     } else if (d.type === 'certificat') {
       const txt = d.kind === 'repos'
-        ? `Je soussigné(e), ${esc(USERS.dentiste.name)}, certifie avoir examiné ce jour ${esc(p.firstName + ' ' + p.lastName)} et que son état de santé nécessite un repos de <b>${esc(d.days)} jour(s)</b> à compter du ${Utils.formatDate(d.date)}, sauf complications.`
-        : `Je soussigné(e), ${esc(USERS.dentiste.name)}, certifie que ${esc(p.firstName + ' ' + p.lastName)} s'est présenté(e) à mon cabinet le ${Utils.formatDate(d.date)} pour des soins dentaires.`;
+        ? `Je soussigné(e), ${esc(doctorName())}, certifie avoir examiné ce jour ${esc(p.firstName + ' ' + p.lastName)} et que son état de santé nécessite un repos de <b>${esc(d.days)} jour(s)</b> à compter du ${Utils.formatDate(d.date)}, sauf complications.`
+        : `Je soussigné(e), ${esc(doctorName())}, certifie que ${esc(p.firstName + ' ' + p.lastName)} s'est présenté(e) à mon cabinet le ${Utils.formatDate(d.date)} pour des soins dentaires.`;
       html += `<div class="doc-title">Certificat médical</div><p class="doc-text">${txt}</p>${d.text ? `<p class="doc-text">${esc(d.text)}</p>` : ''}<p class="doc-text">Certificat délivré à l'intéressé(e) pour servir et valoir ce que de droit.</p>`;
     } else {
       const tot = d.items.reduce((s, i) => s + parseFloat(i.amount || 0), 0);
@@ -908,7 +826,7 @@ const Acts = {
   },
   remove(i) {
     const l = this.list(); const a = l[i];
-    App.confirmDelete(`Supprimer l'acte « ${a.name || 'sans nom'} » du catalogue ?`, () => { l.splice(i, 1); this.saveList(l); DB.logActivity('treatment', `Acte « ${a.name} » retiré du catalogue par ${USERS[App.role]?.name || ''}`); this.render(); App.toast('Acte supprimé', 'warning'); });
+    App.confirmDelete(`Supprimer l'acte « ${a.name || 'sans nom'} » du catalogue ?`, () => { l.splice(i, 1); this.saveList(l); DB.logActivity('treatment', `Acte « ${a.name} » retiré du catalogue par ${Secure.user?.displayName || ''}`); this.render(); App.toast('Acte supprimé', 'warning'); });
   },
   setProCode(v) { const s = DB.settings(); s.cnamCode = v.trim(); DB.saveSettings(s); this._saved(); },
   _saved() {

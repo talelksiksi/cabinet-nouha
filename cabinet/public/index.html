@@ -4,14 +4,12 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Espace cabinet — Dr Nouha Ksiksi</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"/>
+  <link rel="stylesheet" href="vendor/fonts/fonts.css"/>
+  <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css"/>
   <link rel="stylesheet" href="css/styles.css"/>
   <link rel="stylesheet" href="css/cabinet-plus.css"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-        crossorigin="anonymous" referrerpolicy="no-referrer"/>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/secure.css"/>
+  <script src="vendor/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -25,42 +23,8 @@
     <div class="login-blob login-blob-3"></div>
   </div>
   <div class="login-wrap">
-  <div class="login-card">
-    <div class="login-logo">
-      <div class="login-logo-icon"><i class="fa-solid fa-tooth"></i></div>
-      <h1>Dental <span>Clinic</span></h1>
-      <p>Gestion de cabinet dentaire</p>
-    </div>
-    <form id="login-form" class="login-form" autocomplete="off">
-      <div class="login-role-select">
-        <label>Je suis</label>
-        <div class="role-buttons">
-          <button type="button" class="role-btn active" data-role="dentiste"><i class="fa-solid fa-user-doctor"></i> Dentiste</button>
-          <button type="button" class="role-btn" data-role="assistante"><i class="fa-solid fa-user-nurse"></i> Assistante</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label><i class="fa-solid fa-user"></i> Nom d'utilisateur</label>
-        <input type="text" id="login-user" placeholder="dentiste" autocomplete="username" autocapitalize="none"/>
-      </div>
-      <div class="form-group">
-        <label><i class="fa-solid fa-lock"></i> Mot de passe</label>
-        <div class="pass-row">
-          <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"/>
-          <button type="button" class="hint-btn" id="hint-btn" title="Mot de passe oublié ?"><i class="fa-solid fa-lightbulb"></i></button>
-        </div>
-      </div>
-      <div class="hint-bubble hidden" id="hint-bubble">
-        <div class="hint-title">🤫 Psst… vous avez déjà oublié ?</div>
-        <p>Comptes provisoires de la version locale :</p>
-        <div class="hint-cred"><span><strong>dentiste</strong> / <code>sourire</code></span><button type="button" class="hint-fill" data-u="dentiste" data-p="sourire" data-r="dentiste">Remplir</button></div>
-        <div class="hint-cred"><span><strong>assistante</strong> / <code>molaire</code></span><button type="button" class="hint-fill" data-u="assistante" data-p="molaire" data-r="assistante">Remplir</button></div>
-        <small>Le dentiste veut toujours voir votre <em>sourire</em>. L'assistante, elle, connaît chaque <em>molaire</em> par son prénom.</small>
-      </div>
-      <p class="login-error hidden" id="login-error"></p>
-      <button type="submit" class="btn-login">Se connecter <i class="fa-solid fa-arrow-right"></i></button>
-      <p class="login-hint">Version de travail locale · données d'exemple fictives</p>
-    </form>
+  <div class="login-card" id="auth-root">
+    <div class="login-logo"><div class="login-logo-icon"><i class="fa-solid fa-tooth"></i></div><h1>Espace cabinet</h1><p>Chargement…</p></div>
   </div>
   <p class="login-credit">Conçu et développé par <a href="https://cictnardc.net" target="_blank" rel="noopener">CICTNA RDC</a></p>
   </div>
@@ -134,16 +98,26 @@
       <a class="nav-item" data-page="cash">
         <i class="fa-solid fa-cash-register"></i><span>Caisse & dépenses</span>
       </a>
-      <a class="nav-item dentist-only" data-page="reports">
+      <a class="nav-item" data-page="reports">
         <i class="fa-solid fa-chart-line"></i><span>Rapports</span>
       </a>
 
-      <div class="nav-section-label dentist-only">Système</div>
-      <a class="nav-item dentist-only" data-page="staff">
-        <i class="fa-solid fa-user-doctor"></i><span>Personnel</span>
+      <div class="nav-section-label">Administration</div>
+      <a class="nav-item" data-page="users">
+        <i class="fa-solid fa-users-gear"></i><span>Utilisateurs</span>
+        <span class="nav-badge pending hidden" id="nav-badge-users">0</span>
       </a>
-      <a class="nav-item dentist-only" data-page="settings">
+      <a class="nav-item" data-page="journal">
+        <i class="fa-solid fa-clipboard-list"></i><span>Journal d'activité</span>
+      </a>
+      <a class="nav-item" data-page="system">
+        <i class="fa-solid fa-hard-drive"></i><span>Sauvegardes & système</span>
+      </a>
+      <a class="nav-item" data-page="settings">
         <i class="fa-solid fa-gear"></i><span>Paramètres</span>
+      </a>
+      <a class="nav-item" data-page="account">
+        <i class="fa-solid fa-user-lock"></i><span>Mon compte</span>
       </a>
     </nav>
 
@@ -155,6 +129,7 @@
           <span id="sidebar-user-role" class="role-tag">Administrateur</span>
         </div>
       </div>
+      <button class="btn-logout" onclick="Secure.lock()" title="Verrouiller (je m'absente)"><i class="fa-solid fa-lock"></i></button>
       <button class="btn-logout" id="logout-btn" title="Se déconnecter"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
   </aside>
@@ -169,6 +144,7 @@
         <div class="topbar-title" id="topbar-title">Tableau de bord</div>
       </div>
       <div class="topbar-right">
+        <span class="sync-indicator ok" id="sync-indicator" title="Synchronisé avec le serveur du cabinet"><i class="fa-solid fa-circle-check"></i></span>
         <div class="search-box">
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="text" id="global-search" placeholder="Rechercher un patient…"/>
@@ -184,6 +160,13 @@
         <div class="topbar-date"><i class="fa-solid fa-calendar-day"></i> <span id="topbar-date"></span></div>
       </div>
     </header>
+
+    <div class="usb-banner hidden" id="usb-banner">
+      <i class="fa-brands fa-usb"></i>
+      <div><b>Mardi : sauvegarde sur la clé USB</b><span>Branchez la clé de sauvegarde sur ce PC ou sur le PC du serveur, puis lancez la copie.</span></div>
+      <button class="btn-primary" onclick="Admin.usbModal()"><i class="fa-solid fa-floppy-disk"></i> Faire la copie</button>
+    </div>
+    <div class="access-banner hidden" id="access-banner"></div>
 
     <!-- CONTENU DES PAGES -->
     <main class="content-area">
@@ -769,13 +752,12 @@
       </section>
 
       <!-- ══════ PERSONNEL ══════ -->
-      <section id="page-staff" class="page">
-        <div class="page-header">
-          <div><h2>Gestion du personnel</h2><p class="page-subtitle">Dentistes et équipe de la clinique.</p></div>
-          <button class="btn-primary" onclick="Staff.openNew()"><i class="fa-solid fa-plus"></i> Ajouter</button>
-        </div>
-        <div id="staff-grid" class="staff-grid"></div>
-      </section>
+
+      <!-- ══════ UTILISATEURS / JOURNAL / SYSTÈME / MON COMPTE (js/admin.js) ══════ -->
+      <section id="page-users" class="page"></section>
+      <section id="page-journal" class="page"></section>
+      <section id="page-system" class="page"></section>
+      <section id="page-account" class="page"></section>
 
       <!-- ══════ PARAMÈTRES ══════ -->
       <section id="page-settings" class="page">
@@ -805,13 +787,6 @@
               <p class="text-muted" style="font-size:.875rem;margin-bottom:.75rem">Les actes, leurs tarifs et leurs codes CNAM se gèrent dans <b>Actes & tarifs</b>, accessible aussi à l'assistante.</p>
               <button class="btn-secondary" onclick="App.navigate('acts')"><i class="fa-solid fa-tags"></i> Ouvrir Actes & tarifs</button>
               <button class="btn-primary" onclick="Settings.save()"><i class="fa-solid fa-save"></i> Enregistrer les paramètres</button>
-            </div>
-          </div>
-          <div class="card settings-section">
-            <div class="card-header"><h3><i class="fa-solid fa-rotate-left"></i> Données d'exemple</h3></div>
-            <div class="card-body">
-              <p class="text-muted" style="font-size:.875rem;margin-bottom:.75rem">Toutes les données sont fictives et restent dans votre navigateur. Vous avez tout cassé ? Pas de panique, on remet tout comme neuf.</p>
-              <button class="btn-danger" onclick="Settings.resetDemo()"><i class="fa-solid fa-rotate-left"></i> Réinitialiser les données d'exemple</button>
             </div>
           </div>
         </div>
@@ -1055,5 +1030,7 @@
 
 <script src="js/app.js"></script>
 <script src="js/cabinet-plus.js"></script>
+<script src="js/admin.js"></script>
+<script type="module" src="js/secure/session.mjs"></script>
 </body>
 </html>

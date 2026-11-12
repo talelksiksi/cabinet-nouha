@@ -116,7 +116,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
   /* État général (écran de connexion) */
   route('GET', '/api/status', ctx => {
     const n = q('SELECT COUNT(*) n FROM users').n;
-    return { setupNeeded: n === 0, dataKeyReady: !!q(`SELECT 1 FROM meta WHERE key = 'recovery_dek'`), serverTime: Date.now() };
+    return { setupNeeded: n === 0, dataKeyReady: !!q(`SELECT 1 FROM meta WHERE key = 'recovery_dek'`), serverTime: Date.now(), demo: !!cfg.demo };
   });
 
   /* Installation : création du super-admin avec le code affiché par le serveur au premier démarrage */
@@ -230,6 +230,13 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     audit(ctx, 'invitation_acceptee', u.id, { acces_donnees: !!wrapped });
     createSession(ctx, ctx.user);
     return session(ctx.user);
+  });
+
+  /* Annuaire de l'équipe (noms et rôles, sans aucun secret) : listes de dentistes, auteurs… */
+  route('GET', '/api/directory', ctx => {
+    needActive(ctx);
+    return { people: qa(`SELECT id, display_name, role_label, kind, scope FROM users WHERE status = 'active' AND kind != 'superadmin' ORDER BY display_name`)
+      .map(r => ({ id: r.id, displayName: r.display_name, roleLabel: r.role_label, kind: r.kind, scope: r.scope })) };
   });
 
   /* ── Gestion des comptes (super-admin et admins) ── */
@@ -493,6 +500,13 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     };
   });
   route('GET', '/api/backup/status', ctx => { needActive(ctx); return backup.status(); });
+  // Clé de sauvegarde (nécessaire pour restaurer sur un autre PC) : super-admin uniquement, consultation journalisée
+  route('GET', '/api/system/backup-key', ctx => {
+    const u = needManager(ctx);
+    if (u.kind !== 'superadmin') fail(403, 'forbidden', 'Réservé à l\'administrateur informatique.');
+    audit(ctx, 'cle_sauvegarde_consultee');
+    return { backupKey: cfg.secrets.backupKey, dataDir: cfg.dataDir };
+  });
   route('GET', '/api/backup/drives', ctx => { needActive(ctx); return { drives: backup.removableDrives() }; });
   route('POST', '/api/backup/usb', async (ctx, b) => {
     const u = needActive(ctx);

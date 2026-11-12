@@ -55,7 +55,7 @@ export async function lockPrivateKey(privateKey, encKey) {
 }
 export async function unlockPrivateKey(lockedJson, encKey) {
   const raw = await aesDecrypt(encKey, JSON.parse(lockedJson), 'private-key');
-  return subtle.importKey('pkcs8', raw, RSA, false, ['decrypt']);
+  return subtle.importKey('pkcs8', raw, RSA, true, ['decrypt']);   // ré-enveloppable lors d'un changement de mot de passe
 }
 
 /* ── Clé de données du cabinet (DEK) ── */

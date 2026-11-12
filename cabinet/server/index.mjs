@@ -55,7 +55,7 @@ function readJson(req, max) {
   });
 }
 
-export function createApp(cfg, { log = console.log, secure = true } = {}) {
+export function createApp(cfg, { log = console.log } = {}) {
   cfg.startedAt = Date.now();
   const db = openDb(cfg);
   const backup = createBackup({ db, cfg, log });
@@ -85,8 +85,8 @@ export function createApp(cfg, { log = console.log, secure = true } = {}) {
       return api(req, res, url, {
         ip, cookies: parseCookies(req.headers.cookie),
         readJson: max => readJson(req, max),
-        setCookie: token => res.setHeader('Set-Cookie', `cabinet_sid=${token}; HttpOnly; SameSite=Strict; Path=/${secure ? '; Secure' : ''}`),
-        clearCookie: () => res.setHeader('Set-Cookie', `cabinet_sid=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secure ? '; Secure' : ''}`),
+        setCookie: token => res.setHeader('Set-Cookie', `cabinet_sid=${token}; HttpOnly; SameSite=Strict; Path=/${req.socket.encrypted ? '; Secure' : ''}`),
+        clearCookie: () => res.setHeader('Set-Cookie', `cabinet_sid=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${req.socket.encrypted ? '; Secure' : ''}`),
         json: (status, obj) => { if (res.headersSent) return; res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', ...SECURITY_HEADERS }); res.end(JSON.stringify(obj)); },
       });
     }
@@ -123,11 +123,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(line); fs.appendFile(logFile, line + '\n', () => {});
   };
   cfg.tls = ensureTls(cfg, log);
-  const app = createApp(cfg, { log, secure: true });
+  const app = createApp(cfg, { log });
   https.createServer({ key: cfg.tls.key, cert: cfg.tls.cert, minVersion: 'TLSv1.2' }, app.handler)
     .listen(cfg.httpsPort, '0.0.0.0', () => log(`Espace cabinet : https://${cfg.hostname}${cfg.httpsPort === 443 ? '' : ':' + cfg.httpsPort}/`));
   http.createServer(plainHandler(cfg)).listen(cfg.httpPort, '0.0.0.0', () => log(`Installation du certificat : http://${cfg.hostname}${cfg.httpPort === 80 ? '' : ':' + cfg.httpPort}/certificat`))
     .on('error', e => log('Port HTTP indisponible (page certificat)', e));
+  // Accès direct sur ce PC uniquement (http://localhost) : sert à la démonstration et au poste serveur lui-même
+  if (process.env.CABINET_PLAIN_PORT) http.createServer(app.handler).listen(+process.env.CABINET_PLAIN_PORT, '127.0.0.1', () => log(`Sur ce PC : http://localhost:${process.env.CABINET_PLAIN_PORT}/`));
   const mdns = startMdns(cfg.hostname, log);
   app.backup.start();
   if (app.db.prepare('SELECT COUNT(*) n FROM users').get().n === 0)

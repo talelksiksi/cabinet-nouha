@@ -1,0 +1,70 @@
+/* ═══════════════════════════════════════════
+   Espace cabinet — écrans d'accès, administration, bandeaux
+   ═══════════════════════════════════════════ */
+.auth-note { font-size: .86rem; color: var(--text-secondary); background: var(--bg); border-radius: 10px; padding: .7rem .85rem; margin-bottom: 1rem; line-height: 1.5; }
+.auth-note code { font-family: var(--font-mono); font-size: .8rem; }
+.btn-link { display: block; width: 100%; margin-top: .7rem; background: none; border: 0; color: var(--primary); font-weight: 600; font-size: .86rem; cursor: pointer; padding: .4rem; }
+.btn-link:hover { text-decoration: underline; }
+.btn-login:disabled { opacity: .6; cursor: wait; }
+.pw-rules { list-style: none; margin: -.2rem 0 .5rem; padding: 0; display: grid; gap: .15rem; font-size: .78rem; color: var(--text-muted); }
+.pw-rules li i { width: 1rem; font-size: .7rem; }
+.pw-rules li.ok { color: var(--success); }
+.pw-rules li.bad { color: var(--danger); }
+.recovery-key { font-family: var(--font-mono); font-weight: 700; font-size: 1.15rem; letter-spacing: .12em; text-align: center; padding: 1rem; border: 2px dashed var(--primary); border-radius: 12px; background: var(--primary-light); color: var(--ink); margin-bottom: 1rem; word-break: break-all; }
+.check-line { display: flex !important; align-items: center; gap: .55rem; font-size: .86rem; margin: .9rem 0; cursor: pointer; font-weight: 500 !important; }
+.check-line input { width: 18px; height: 18px; accent-color: var(--primary); }
+.btn-secondary.wide { width: 100%; justify-content: center; }
+.login-card .login-logo h1 { font-size: 1.45rem; }
+
+/* ── Synchronisation ── */
+.sync-indicator { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; font-weight: 600; padding: .3rem .55rem; border-radius: 20px; }
+.sync-indicator.ok { color: var(--success); }
+.sync-indicator.offline { color: #fff; background: var(--danger); }
+
+/* ── Bandeaux (clé USB du mardi, accès en attente) ── */
+.usb-banner, .access-banner { display: flex; align-items: center; gap: .9rem; margin: 1rem 1.5rem 0; padding: .8rem 1rem; border-radius: var(--radius); }
+.usb-banner { background: linear-gradient(120deg, #fff7ed, #fef3c7); border: 1px solid #f5d38a; }
+.usb-banner > i { font-size: 1.5rem; color: #b45309; }
+.access-banner { background: var(--primary-light); border: 1px solid #b9d3d8; }
+.access-banner > i { font-size: 1.3rem; color: var(--primary); }
+.usb-banner div, .access-banner div { flex: 1; }
+.usb-banner b, .access-banner b { display: block; }
+.usb-banner span, .access-banner span { font-size: .84rem; color: var(--text-secondary); }
+.page-system .usb-banner { margin: 0 0 1rem; }
+
+/* ── Utilisateurs ── */
+.perm-cell { max-width: 380px; }
+.perm-chip { display: inline-block; font-size: .7rem; font-weight: 600; padding: .12rem .5rem; border-radius: 10px; margin: .1rem .15rem .1rem 0; background: var(--primary-light); color: var(--primary-dark); }
+.perm-chip.view { background: #f1f5f9; color: #475569; }
+.perm-chip.own { background: var(--orange-light); color: #9a4d22; }
+.row-disabled td { opacity: .55; }
+.pending-card { margin-bottom: 1rem; border-color: #b9d3d8; }
+.pending-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .5rem 0; border-bottom: 1px solid var(--border-light); flex-wrap: wrap; }
+.pending-row:last-of-type { border: 0; }
+.preset-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: 1rem 0 .7rem; font-size: .82rem; color: var(--text-muted); }
+.perm-matrix { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.perm-matrix th { text-align: center; font-size: .72rem; text-transform: uppercase; color: var(--text-muted); padding: .4rem; border-bottom: 2px solid var(--border); }
+.perm-matrix th:first-child { text-align: left; }
+.perm-matrix td { padding: .4rem; border-bottom: 1px solid var(--border-light); text-align: center; }
+.perm-matrix td:first-child { text-align: left; }
+.perm-matrix td.na { color: var(--border); }
+.perm-matrix input { width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer; }
+.perm-matrix tr:hover td { background: #fafcfc; }
+.invite-card { border: 2px solid var(--primary); border-radius: 12px; padding: 1rem 1.2rem; margin: 1rem 0; background: var(--primary-light); }
+.invite-card div { margin: .35rem 0; }
+.invite-card span { display: block; font-size: .72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+.invite-card b { font-size: 1.05rem; }
+.invite-card .code { font-family: var(--font-mono); font-size: 1.2rem; letter-spacing: .1em; }
+.invite-card p { font-size: .8rem; color: var(--text-secondary); margin-top: .6rem; }
+
+/* ── Système ── */
+.sys-list > div { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem 0; border-bottom: 1px dashed var(--border-light); font-size: .87rem; }
+.sys-list > div span { color: var(--text-muted); }
+.sys-list > div b { text-align: right; }
+.drive-row { display: flex; align-items: center; gap: .5rem; padding: .6rem .8rem; border: 1px solid var(--border); border-radius: 10px; margin: .4rem 0; cursor: pointer; }
+.drive-row input { width: 17px; height: 17px; accent-color: var(--primary); }
+
+@media (max-width: 640px) {
+  .usb-banner, .access-banner { margin: .8rem .8rem 0; flex-wrap: wrap; }
+  .perm-matrix { font-size: .78rem; }
+}
