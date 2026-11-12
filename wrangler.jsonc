@@ -3,6 +3,9 @@
 {
   "name": "dr-nouha-ksiksi",
   "compatibility_date": "2025-09-01",
+  // Adresse publique en attendant le nom de domaine ; pas d'adresses d'aperçu par version
+  "workers_dev": true,
+  "preview_urls": false,
   "assets": {
     "directory": "./site",
     "html_handling": "auto-trailing-slash",
