@@ -186,7 +186,7 @@
     <div class="rdv-text reveal">
       <p class="eyebrow">المواعيد</p>
       <h2>اطلبوا موعدكم</h2>
-      <p>اذكروا سبب الزيارة والأوقات المناسبة لكم: يصل طلبكم إلى واتساب العيادة التي تؤكد لكم الساعة.</p>
+      <p>اذكروا الأوقات المناسبة لكم: يصل طلبكم إلى واتساب العيادة التي تؤكد لكم الساعة. لا داعي لذكر سبب الزيارة: ستتحدثون عنه مع الطبيبة.</p>
       <div class="rdv-alt">
         <a class="alt wa" href="#" data-wa><i class="fa-brands fa-whatsapp"></i><div><b>واتساب</b><span><span dir="ltr">98 192 130</span> · ردّ سريع</span></div></a>
         <a class="alt" href="#" data-tel><i class="fa-solid fa-phone"></i><div><b>اتصال</b><span id="tel-label" dir="ltr">23 232 407</span></div></a>
@@ -198,18 +198,11 @@
         <label>الاسم واللقب<input name="nom" required autocomplete="name" placeholder="مثال: أميرة بن صالح"/></label>
         <label>الهاتف<input name="tel" required type="tel" autocomplete="tel" placeholder="+216 …"/></label>
       </div>
-      <label>سبب الزيارة
-        <select name="motif" required>
-          <option value="">اختر…</option>
-          <option>استشارة / فحص</option><option>ألم أو حالة مستعجلة</option><option>زراعة الأسنان</option>
-          <option>تركيبات</option><option>تجميل الابتسامة</option><option>قلع / جراحة</option><option>إزالة الجير / علاج</option>
-        </select>
-      </label>
       <div class="f-row">
         <label>اليوم المفضّل<input name="jour" type="date"/></label>
         <label>الفترة<select name="moment"><option>لا يهم</option><option>صباحًا</option><option>بعد الظهر</option></select></label>
       </div>
-      <label>رسالة <small>(اختياري)</small><textarea name="message" rows="3" placeholder="صِف حاجتك باختصار"></textarea></label>
+      <label>ملاحظة <small>(اختياري)</small><textarea name="message" rows="2" placeholder="مثال: أفضّل آخر الصباح، ليس يوم الأربعاء"></textarea></label>
       <button class="btn btn-gold btn-lg" type="submit"><i class="fa-brands fa-whatsapp"></i> أرسل عبر واتساب</button>
       <p class="form-msg" id="form-msg" aria-live="polite"></p>
     </form>

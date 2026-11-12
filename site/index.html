@@ -186,7 +186,7 @@
     <div class="rdv-text reveal">
       <p class="eyebrow">Rendez-vous</p>
       <h2>Demandez votre rendez-vous</h2>
-      <p>Indiquez le motif et vos disponibilités : votre demande part sur le WhatsApp du cabinet, qui vous confirme l'heure.</p>
+      <p>Indiquez vos disponibilités : votre demande part sur le WhatsApp du cabinet, qui vous confirme l'heure. Inutile de préciser le motif : vous en parlerez avec le Docteur.</p>
       <div class="rdv-alt">
         <a class="alt wa" href="#" data-wa><i class="fa-brands fa-whatsapp"></i><div><b>WhatsApp</b><span>98 192 130 · réponse rapide</span></div></a>
         <a class="alt" href="#" data-tel><i class="fa-solid fa-phone"></i><div><b>Appeler</b><span id="tel-label">23 232 407</span></div></a>
@@ -198,18 +198,11 @@
         <label>Prénom et nom<input name="nom" required autocomplete="name" placeholder="Ex : Amira Ben Salah"/></label>
         <label>Téléphone<input name="tel" required type="tel" autocomplete="tel" placeholder="+216 …"/></label>
       </div>
-      <label>Motif
-        <select name="motif" required>
-          <option value="">Choisir…</option>
-          <option>Consultation / bilan</option><option>Douleur ou urgence</option><option>Implant</option>
-          <option>Prothèse</option><option>Esthétique du sourire</option><option>Extraction / chirurgie</option><option>Détartrage / soins</option>
-        </select>
-      </label>
       <div class="f-row">
         <label>Jour souhaité<input name="jour" type="date"/></label>
         <label>Moment<select name="moment"><option>Peu importe</option><option>Matin</option><option>Après-midi</option></select></label>
       </div>
-      <label>Message <small>(facultatif)</small><textarea name="message" rows="3" placeholder="Décrivez brièvement votre besoin"></textarea></label>
+      <label>Précision <small>(facultatif)</small><textarea name="message" rows="2" placeholder="Ex : plutôt en fin de matinée, pas le mercredi"></textarea></label>
       <button class="btn btn-gold btn-lg" type="submit"><i class="fa-brands fa-whatsapp"></i> Envoyer par WhatsApp</button>
       <p class="form-msg" id="form-msg" aria-live="polite"></p>
     </form>

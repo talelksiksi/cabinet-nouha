@@ -28,18 +28,18 @@ const T = AR ? {
   waText: 'السلام عليكم دكتورة، أريد حجز موعد.',
   waSoon: 'سيُضاف رقم الواتساب الخاص بالعيادة قريبًا.',
   telSoon: 'سيُضاف رقم هاتف العيادة قريبًا.',
-  formErr: 'الرجاء كتابة الاسم ورقم هاتف صحيح وسبب الزيارة.',
+  formErr: 'الرجاء كتابة الاسم ورقم هاتف صحيح.',
   formOk: p => `شكرًا ${p}! يُفتح واتساب برسالتكم: اضغطوا فقط على «إرسال».`,
   waHead: 'السلام عليكم دكتورة، أريد حجز موعد.',
-  labels: { nom: 'الاسم', tel: 'الهاتف', motif: 'السبب', jour: 'اليوم المفضّل', moment: 'الفترة', message: 'رسالة' },
+  labels: { nom: 'الاسم', tel: 'الهاتف', jour: 'اليوم المفضّل', moment: 'الفترة', message: 'ملاحظة' },
 } : {
   waText: 'Bonjour Docteur, je souhaite prendre rendez-vous.',
   waSoon: 'Le numéro WhatsApp du cabinet sera ajouté très bientôt.',
   telSoon: 'Le numéro du cabinet sera ajouté très bientôt.',
-  formErr: 'Merci d\'indiquer votre nom, un numéro de téléphone valide et le motif.',
+  formErr: 'Merci d\'indiquer votre nom et un numéro de téléphone valide.',
   formOk: p => `Merci ${p} ! WhatsApp s'ouvre avec votre demande : il ne reste qu'à appuyer sur « Envoyer ».`,
   waHead: 'Bonjour Docteur, je souhaite prendre rendez-vous.',
-  labels: { nom: 'Nom', tel: 'Téléphone', motif: 'Motif', jour: 'Jour souhaité', moment: 'Moment', message: 'Message' },
+  labels: { nom: 'Nom', tel: 'Téléphone', jour: 'Jour souhaité', moment: 'Moment', message: 'Précision' },
 };
 
 const $ = s => document.querySelector(s);
@@ -101,11 +101,11 @@ form.jour.min = new Date().toISOString().slice(0, 10);
 form.addEventListener('submit', e => {
   e.preventDefault();
   let ok = true;
-  ['nom', 'tel', 'motif'].forEach(n => { const f = form[n]; const bad = !f.value.trim() || (n === 'tel' && f.value.replace(/\D/g, '').length < 8); f.classList.toggle('invalid', bad); if (bad) ok = false; });
+  ['nom', 'tel'].forEach(n => { const f = form[n]; const bad = !f.value.trim() || (n === 'tel' && f.value.replace(/\D/g, '').length < 8); f.classList.toggle('invalid', bad); if (bad) ok = false; });
   if (!ok) { msg.className = 'form-msg err'; msg.textContent = T.formErr; return; }
   const v = n => form[n].value.trim();
   const day = v('jour') ? v('jour').split('-').reverse().join('/') : '';
-  const lines = [T.waHead, '', ...['nom', 'tel', 'motif'].map(n => `${T.labels[n]} : ${v(n)}`),
+  const lines = [T.waHead, '', ...['nom', 'tel'].map(n => `${T.labels[n]} : ${v(n)}`),
     ...(day ? [`${T.labels.jour} : ${day}`] : []), `${T.labels.moment} : ${v('moment')}`, ...(v('message') ? [`${T.labels.message} : ${v('message')}`] : [])];
   const url = `https://wa.me/${CABINET.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(lines.join('\n'))}`;
   if (!window.open(url, '_blank', 'noopener')) location.href = url;
