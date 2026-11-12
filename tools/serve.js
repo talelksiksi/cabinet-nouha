@@ -1,5 +1,6 @@
 // Aperçu local du site, comme Cloudflare Pages : fichiers statiques, « dossier/ » sert « dossier/index.html ».
 // Usage : node tools/serve.js [port] [dossier]   (par défaut 3470 et « site » ; « app » pour l'espace cabinet)
+// Écoute sur le réseau local : ouvrir l'adresse « téléphone » affichée au démarrage (même Wi-Fi).
 const http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..', process.argv[3] || 'site'), port = +process.env.PORT || +process.argv[2] || 3470;
 const T = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -17,4 +18,8 @@ http.createServer((q, r) => {
     r.writeHead(200, { 'Content-Type': T[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
     r.end(b);
   });
-}).listen(port, '127.0.0.1', () => console.log(`Aperçu : http://localhost:${port}/`));
+}).listen(port, '0.0.0.0', () => {
+  // Accessible aussi depuis le téléphone, sur le même Wi-Fi
+  const lan = Object.values(require('os').networkInterfaces()).flat().filter(i => i.family === 'IPv4' && !i.internal).map(i => `http://${i.address}:${port}/`);
+  console.log(`Aperçu : http://localhost:${port}/${lan.length ? '  ·  téléphone : ' + lan.join('  ') : ''}`);
+});
