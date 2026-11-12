@@ -1,0 +1,11 @@
+// Déploiement Cloudflare (Workers, fichiers statiques) : seul le dossier « site » est publié.
+// Jamais « app » (espace cabinet) ni « assets » (photos d'origine des patients).
+{
+  "name": "dr-nouha-ksiksi",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./site",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}
