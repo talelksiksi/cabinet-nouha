@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Espace cabinet — portable du Dr Nouha</title>
+<style>
+:root { --navy: #16325c; --gold: #c9a24b; --ink: #1a2433; --muted: #5d6878; --bg: #faf8f4; --line: #e3e6ec; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; }
+main { max-width: 860px; margin: 0 auto; padding: 2rem 1.2rem 4rem; }
+h1 { color: var(--navy); margin: 0 0 .2rem; font-size: 1.7rem; }
+h2 { color: var(--navy); font-size: 1.2rem; margin: 2rem 0 .6rem; padding-top: 1rem; border-top: 2px solid var(--line); }
+h2 span { display: inline-grid; place-items: center; min-width: 1.8rem; height: 1.8rem; padding: 0 .3rem; border-radius: 999px; background: var(--gold); color: #fff; font-size: .95rem; margin-right: .5rem; }
+h3 { color: var(--navy); font-size: 1rem; margin: 1.2rem 0 .3rem; }
+.lead { color: var(--muted); margin-top: 0; }
+.box { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: .9rem 1.1rem; margin: .8rem 0; }
+.warn { background: #fff7ed; border-color: #f5d38a; }
+.ok { background: #f0faf4; border-color: #b7e0c5; }
+code { background: #eef1f6; padding: .1rem .4rem; border-radius: 5px; font-family: Consolas, monospace; font-size: .92em; }
+ol, ul { padding-left: 1.3rem; } li { margin: .3rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+td, th { border: 1px solid var(--line); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+th { background: #f3f5f8; }
+@media print { body { background: #fff; } h2 { break-after: avoid; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Espace cabinet — portable du Dr Nouha</h1>
+<p class="lead">Paquet <b>OWNER</b> : à installer <b>uniquement</b> sur le portable du Dr Nouha, <b>après</b> l'installation du PC du cabinet
+(paquet Staff) et l'activation de son compte. Rien à télécharger ; aucune donnée de démonstration.</p>
+
+<div class="box ok"><b>Ce que fait le portable :</b> une copie complète et chiffrée des dossiers, utilisable à la maison sans Internet.
+Dès qu'il est sur le <b>Wi-Fi du cabinet</b> avec le PC du cabinet allumé, tout se synchronise dans les deux sens (chaque minute).
+Seuls le <b>Dr Nouha</b> (tous ses droits) et <b>Talel</b> (ses droits informatiques, sans les dossiers) peuvent s'y connecter.
+Il porte aussi l'outil <b>« comptes protégés »</b>, seul moyen de réinitialiser le compte du Dr Nouha ou de Talel.</div>
+
+<h2><span>1</span>Avant de commencer</h2>
+<ul>
+<li>Windows 10 ou 11, 64 bits.</li>
+<li>Le compte Windows du portable a un <b>mot de passe</b> (ou un code PIN) et des <b>droits administrateur</b> : l'outil « comptes protégés » en dépend.
+Ne pas partager ce compte Windows.</li>
+<li>Conseillé : activer le <b>chiffrement de l'appareil</b> (Paramètres → Confidentialité et sécurité → Chiffrement de l'appareil, ou BitLocker).</li>
+</ul>
+
+<h2><span>2</span>Installer</h2>
+<ol>
+<li>Copier le ZIP sur le portable, clic droit → <b>Extraire tout…</b></li>
+<li>Double-cliquer sur <code>INSTALLER.cmd</code> → <b>Oui</b> à la demande de Windows.</li>
+<li>À la fin : raccourci <b>« Espace cabinet (portable) »</b> sur le bureau, avec l'icône du cabinet ; la page d'association s'ouvre.</li>
+</ol>
+<p>Le portable n'est accessible <b>que depuis lui-même</b> (adresse <code>http://localhost:3475</code>) : aucun autre appareil ne peut s'y connecter.</p>
+
+<h2><span>3</span>Associer le portable au cabinet (une seule fois, au cabinet)</h2>
+<ol>
+<li>Portable connecté au <b>Wi-Fi du personnel</b> du cabinet, PC du cabinet allumé.</li>
+<li>Sur un PC du cabinet, le Dr Nouha (ou Talel) se connecte → <b>Sauvegardes &amp; système → Portables associés → Associer un portable</b>. Un code s'affiche (valable 15 minutes).</li>
+<li>Sur le portable, page « Association » : saisir ce code → <b>Associer</b>. Les dossiers sont copiés (quelques minutes la première fois).</li>
+<li>Se connecter sur le portable avec <b>le même identifiant et le même mot de passe qu'au cabinet</b>.</li>
+</ol>
+
+<h2><span>4</span>Au quotidien</h2>
+<table>
+<tr><th>Situation</th><th>Ce qui se passe</th></tr>
+<tr><td>À la maison</td><td>Tout fonctionne. En haut : « Hors du cabinet · N modifications en attente ».</td></tr>
+<tr><td>Arrivée au cabinet</td><td>Synchronisation automatique en moins d'une minute (ou <b>Sauvegardes &amp; système → Synchroniser maintenant</b>). En haut : « Cabinet synchronisé ».</td></tr>
+<tr><td>Le soir, courant coupé au cabinet</td><td>Rien à faire : la synchronisation reprend le lendemain matin.</td></tr>
+<tr><td>Même dossier modifié des deux côtés</td><td>Rien n'est écrasé : menu <b>Conflits à trancher</b>, les deux versions côte à côte, choisir celle à garder.</td></tr>
+<tr><td>Comptes de l'équipe</td><td>Se gèrent aussi depuis le portable : les changements partent au cabinet dès que le portable y est connecté.</td></tr>
+<tr><td>Copie USB du mardi</td><td>Se fait au cabinet, sur le PC du cabinet (pas sur le portable).</td></tr>
+</table>
+
+<h2><span>5</span>Outil « comptes protégés »</h2>
+<p>Fichier <code>C:\EspaceCabinet\COMPTES-PROTEGES.cmd</code> (aussi dans ce dossier). Il demande les droits administrateur du portable.
+C'est le <b>seul</b> moyen de toucher au compte du Dr Nouha ou de Talel : il n'existe ni dans l'application, ni sur le PC du cabinet.</p>
+<h3>Mot de passe oublié (Dr Nouha ou Talel)</h3>
+<ol>
+<li>Sur le portable : double-cliquer <code>COMPTES-PROTEGES.cmd</code> → <b>Oui</b>.</li>
+<li>Choisir <b>1</b> (Dr Nouha) ou <b>2</b> (Talel), taper <b>OUI</b>. Un <b>nouveau code d'activation</b> s'affiche : le recopier.</li>
+<li>Emmener le portable au cabinet (Wi-Fi du cabinet) : la demande part en moins d'une minute. Relancer l'outil : la ligne indique « appliquée au cabinet ».</li>
+<li>Sur un PC du cabinet : <b>Première connexion (code d'activation ou d'invitation)</b> → identifiant + nouveau code → nouveau mot de passe (valable 72 h).</li>
+<li><b>Dr Nouha uniquement</b> : l'application demande ensuite la <b>feuille de secours</b> imprimée pour redonner l'accès aux dossiers. La saisir : tout revient.</li>
+<li>Le portable reçoit le nouveau mot de passe à la synchronisation suivante.</li>
+</ol>
+<h3>Changer le nom affiché</h3>
+<p>Choix <b>3</b> ou <b>4</b>, saisir le nom. Appliqué au cabinet à la synchronisation suivante.</p>
+<div class="box warn">Une réinitialisation ne donne <b>jamais</b> accès aux dossiers : sans la feuille de secours, le nouveau mot de passe ouvre le compte mais pas les dossiers.
+Chaque demande est inscrite dans le journal du cabinet (« outil du portable »).</div>
+
+<h2><span>6</span>Perte, vol, panne</h2>
+<p>Voir <code>GUIDE-SECOURS.html</code>. En bref : au cabinet, <b>Sauvegardes &amp; système → Portables associés → Retirer</b> ; les dossiers du portable restent chiffrés ;
+on installe ce même paquet sur un nouveau portable et on l'associe (étape 3).</p>
+
+<h2><span>7</span>Mise à jour</h2>
+<p>Extraire la nouvelle version du paquet Owner et relancer <code>INSTALLER.cmd</code> sur le portable : les données et l'association sont conservées.</p>
+</main>
+</body>
+</html>

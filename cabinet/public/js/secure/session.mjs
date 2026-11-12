@@ -336,7 +336,7 @@ function showLogin(message) {
         <button type="button" class="hint-btn" data-toggle="li-pw" title="Afficher"><i class="fa-solid fa-eye"></i></button></div></div>
       <p class="login-error ${message ? '' : 'hidden'}">${esc(message || '')}</p>
       <button type="submit" class="btn-login">Se connecter <i class="fa-solid fa-arrow-right"></i></button>
-      ${nomad ? '' : '<button type="button" class="btn-link" id="go-invite"><i class="fa-solid fa-key"></i> Première connexion avec un code d\'invitation</button>'}
+      ${nomad ? '' : '<button type="button" class="btn-link" id="go-invite"><i class="fa-solid fa-key"></i> Première connexion (code d\'activation ou d\'invitation)</button>'}
       ${S.status?.demo ? '<p class="login-hint"><i class="fa-solid fa-flask"></i> Démonstration : données fictives</p>' : '<p class="login-hint"><i class="fa-solid fa-shield-halved"></i> Données chiffrées · accessible uniquement au cabinet</p>'}
     </form>`));
   root().querySelector('[data-toggle="li-pw"]').addEventListener('click', () => { const p = document.getElementById('li-pw'); p.type = p.type === 'password' ? 'text' : 'password'; });
@@ -355,10 +355,10 @@ function showLogin(message) {
 }
 
 function showInvite() {
-  screen(card('Activer mon compte', 'Avec le code remis par l\'administrateur', `
+  screen(card('Activer mon compte', 'Avec le code d\'activation (installation) ou d\'invitation (remis par un administrateur)', `
     <form class="login-form" id="f-invite" autocomplete="off">
       ${field('iv-user', 'Identifiant', 'text', 'autocapitalize="none" required')}
-      ${field('iv-code', 'Code d\'invitation', 'text', 'autocomplete="off" required placeholder="XXXXX-XXXXX-XXXXX-XXXXX"')}
+      ${field('iv-code', 'Code d\'activation ou d\'invitation', 'text', 'autocomplete="off" required placeholder="XXXXX-XXXXX-XXXXX-XXXXX"')}
       ${pwFields('iv')}
       <p class="login-error hidden"></p>
       <button type="submit" class="btn-login">Activer <i class="fa-solid fa-arrow-right"></i></button>
@@ -694,5 +694,12 @@ window.Secure = {
   decrypt: (c, id, rec) => C.decryptRecord(S.dek, c, id, rec),
   api, can, canPage, isDentist, logout, lock: () => lock('manual'), changePassword, createUser, resetUser, grant, nextSeq,
   refreshBackupBanner, printRecovery, autoGrant, MODULES, PRESETS, checkPassword: C.checkPassword, generatePassword: C.generatePassword,
+};
+/* Nouvelle feuille de secours (l'ancienne cesse de fonctionner) : administrateur détenteur de la clé des données */
+Secure.newRecoverySheet = async () => {
+  if (!S.dek) throw new Error('Accès aux dossiers requis.');
+  const recovery = C.newRecoveryKey();
+  await api('POST', '/api/keys/recovery', { recoveryDek: await C.wrapDekWithRecovery(S.dek, recovery) });
+  printRecovery(recovery);
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

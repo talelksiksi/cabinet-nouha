@@ -48,10 +48,10 @@ const Admin = {
       <div class="card"><div class="card-body p0"><div class="table-wrap"><table class="data-table users-table">
         <thead><tr><th>Personne</th><th>Type</th><th>Accès</th><th>Statut</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
         <tbody>${users.map(u => {
-          const [st, cls] = this.STATUS[u.status] || [u.status, 'planifie'];
-          const me = u.id === Secure.user.id, protectedU = u.kind === 'superadmin' && Secure.user.kind !== 'superadmin';
+          const [st, cls] = u.protected && u.status === 'invited' ? ['Code d’activation à utiliser', 'en-attente'] : (this.STATUS[u.status] || [u.status, 'planifie']);
+          const me = u.id === Secure.user.id, protectedU = u.protected || (u.kind === 'superadmin' && Secure.user.kind !== 'superadmin');
           return `<tr class="${u.status === 'disabled' ? 'row-disabled' : ''}">
-            <td><b>${this.esc(u.displayName)}</b>${me ? ' <span class="perm-chip own">vous</span>' : ''}<br><small class="text-muted">${this.esc(u.username)}${u.roleLabel ? ' · ' + this.esc(u.roleLabel) : ''}</small></td>
+            <td><b>${this.esc(u.displayName)}</b>${me ? ' <span class="perm-chip own">vous</span>' : ''}${u.protected ? ' <span class="perm-chip locked" title="Compte protégé : modifiable uniquement avec l\'outil « comptes protégés » du portable du Dr Nouha"><i class="fa-solid fa-lock"></i> protégé</span>' : ''}<br><small class="text-muted">${this.esc(u.username)}${u.roleLabel ? ' · ' + this.esc(u.roleLabel) : ''}</small></td>
             <td style="font-size:.82rem">${this.KIND[u.kind]}</td>
             <td class="perm-cell">${levelSummary(u)}</td>
             <td><span class="badge badge-${cls}">${st}</span>${u.status === 'invited' && u.inviteExpires ? `<br><small class="text-muted">expire le ${new Date(u.inviteExpires).toLocaleDateString('fr-FR')}</small>` : ''}</td>
@@ -62,8 +62,9 @@ const Admin = {
               ${me || protectedU ? '' : u.status === 'disabled'
                 ? `<button class="icon-btn view" title="Réactiver" onclick="Admin.enable('${u.id}')"><i class="fa-solid fa-user-check"></i></button>`
                 : `<button class="icon-btn del" title="Désactiver" onclick="Admin.disable('${u.id}')"><i class="fa-solid fa-user-slash"></i></button>`}
-            </div></td></tr>`;
-        }).join('')}</tbody></table></div></div></div>`;
+            </div>${u.protected ? '<small class="text-muted">Mot de passe : « Mon compte »</small>' : ''}</td></tr>`;
+        }).join('')}</tbody></table></div></div></div>
+      ${users.some(u => u.protected) ? `<p class="text-muted" style="font-size:.8rem;margin-top:.6rem"><i class="fa-solid fa-lock"></i> Les comptes protégés (Dr Nouha, administrateur informatique) ne se modifient pas ici : chacun change son mot de passe dans « Mon compte » ; un mot de passe oublié se réinitialise avec l'outil « comptes protégés » du portable du Dr Nouha.</p>` : ''}`;
     this.renderPendingBanner();
   },
 
@@ -184,6 +185,10 @@ const Admin = {
     donnee_creee: 'Création', donnee_modifiee: 'Modification', donnee_supprimee: 'Suppression',
     sauvegarde_usb: 'Copie sur clé USB', sauvegarde_manuelle: 'Sauvegarde manuelle', cle_sauvegarde_consultee: 'Clé de sauvegarde consultée',
     portable_code_cree: 'Code d\'association de portable créé', portable_associe: 'Portable associé', portable_retire: 'Portable retiré', conflit_tranche: 'Conflit de synchronisation tranché',
+    compte_protege_cree: 'Compte protégé créé (installation)', code_activation_renouvele: 'Code d\'activation renouvelé (installation)',
+    compte_protege_reinitialisation_demandee: 'Réinitialisation demandée (outil du portable)', compte_protege_reinitialise: 'Compte protégé réinitialisé (outil du portable)',
+    compte_protege_renommage_demande: 'Nouveau nom demandé (outil du portable)', compte_protege_renomme: 'Compte protégé renommé (outil du portable)',
+    compte_protege_refuse: 'Demande de l\'outil du portable refusée',
   },
   COLL: { patients: 'patient', appointments: 'rendez-vous', treatments: 'soin', payments: 'facture', documents: 'document', chart: 'schéma dentaire',
     files: 'fichier', labworks: 'travail de laboratoire', labs: 'laboratoire', labpayments: 'règlement labo', tasks: 'tâche', expenses: 'dépense',
@@ -267,7 +272,7 @@ const Admin = {
     try {
       const r = await Secure.api('POST', '/api/sync/pairing-code');
       Plus.modal('modal-pair', '<i class="fa-solid fa-link"></i> Associer un portable', `
-        <p>Sur le portable (installé avec <code>INSTALLER-PORTABLE.cmd</code> et branché sur le Wi-Fi du cabinet), ouvrez l'Espace cabinet et saisissez :</p>
+        <p>Sur le portable (installé avec le paquet <b>Install-Package-Owner</b> et branché sur le Wi-Fi du cabinet), ouvrez l'Espace cabinet et saisissez :</p>
         <div class="invite-card"><div><span>Code d'association</span><b class="code">${this.esc(r.code)}</b></div><p>Valable 15 minutes, une seule fois.</p></div>`,
         `<button class="btn-primary" onclick="App.closeModal('modal-pair');Admin.renderSystem()">Terminé</button>`);
     } catch (e) { App.toast(e.message, 'error'); }
@@ -368,11 +373,19 @@ const Admin = {
         </div></div>
         <div class="card"><div class="card-header"><h3><i class="fa-solid fa-shield-halved"></i> Sécurité</h3></div><div class="card-body sys-list">
           <div><span>Accès aux dossiers</span><b>${u.kind === 'superadmin' ? 'Aucun (administrateur informatique)' : Secure.hasDataKey ? 'Déchiffrés sur cet appareil uniquement' : 'En attente'}</b></div>
+          ${u.kind === 'admin' && Secure.hasDataKey ? `<div><span>Feuille de secours</span><b><button class="btn-sm-primary" onclick="Admin.newRecoverySheet()"><i class="fa-solid fa-print"></i> Imprimer une nouvelle feuille</button></b></div>` : ''}
+          ${u.protected ? `<div><span>Compte protégé</span><b>Nom, type et accès fixes ; oubli du mot de passe : outil du portable du Dr Nouha</b></div>` : ''}
           <div><span>Verrouillage automatique</span><b>après 30 minutes sans activité</b></div>
           <div><span>Je m'absente</span><b><button class="btn-sm-primary" onclick="Secure.lock()"><i class="fa-solid fa-lock"></i> Verrouiller maintenant</button></b></div>
         </div></div>
       </div>`;
     this.pwHint();
+  },
+  newRecoverySheet() {
+    App.confirmDelete('Imprimer une NOUVELLE feuille de secours ? L’ancienne feuille ne fonctionnera plus : détruisez-la et rangez la nouvelle à sa place.', async () => {
+      try { await Secure.newRecoverySheet(); App.toast('Nouvelle feuille de secours créée : imprimez-la et rangez-la en lieu sûr.', 'success'); }
+      catch (e) { App.toast(e.message, 'error'); }
+    });
   },
   pwHint() {
     const pw = document.getElementById('ac-new')?.value || '', r = Secure.checkPassword(pw, Secure.user.username);

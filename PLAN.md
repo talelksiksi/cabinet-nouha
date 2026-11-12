@@ -154,10 +154,21 @@ donc le portable garde sa propre copie chiffrée et se resynchronise quand les d
 Réservé à Dr Nouha (tous droits) et Talel (droits informatiques, pas de dossiers). Association par code à usage unique (15 min),
 certificat du cabinet épinglé ; le cabinet reste la référence ; conflits conservés et tranchés par Dr Nouha (écran
 « Conflits à trancher ») ; actions d'administration du portable relayées au cabinet ; journal du portable remonté (origine
-« portable ») ; factures du portable en série « P ». `INSTALLER-PORTABLE.cmd` ; raccourci bureau avec icône sur les deux
+« portable ») ; factures du portable en série « P ». paquet Owner ; raccourci bureau avec icône sur les deux
 installations. 35 tests (dont 11 de synchronisation) ; essai réel dans la démo (cabinet :3475 + portable :3476) : modification
 croisée, conflit, résolution côté portable → version reçue au cabinet. **Reste** : décider comment les comptes Talel / Nouha
 sont créés et protégés ; installation réelle (cabinet + portable).
+
+**Avancement (13 novembre 2026, suite)** — comptes protégés et paquets finaux :
+- `nouha` et `talel` créés par l'installation du cabinet avec un code d'activation chacun (72 h, affiché une fois) ; chacun choisit son
+  mot de passe. Verrouillés dans l'application (403 « protected » sur modifier / désactiver / réinitialiser, même entre eux).
+- Décision Talel : l'outil de gestion de ces deux comptes est sur le **portable du Dr Nouha** (`COMPTES-PROTEGES.cmd`, admin Windows),
+  pas sur le PC du cabinet (les assistantes y ont accès). Demandes relayées au cabinet par la synchronisation, tracées au journal.
+- Sauvegardes avec identité du serveur ; restauration sur PC de remplacement sans changer les mots de passe ni les certificats ;
+  le portable complète la restauration. « Nouvelle feuille de secours » dans Mon compte.
+- Deux paquets : `Install-Package-Staff` (cabinet + `POSTE-CABINET.cmd` pour les autres PC) et `Install-Package-Owner` (portable).
+  Guides : installation, portable, secours. Pas de téléphones (PC et portable uniquement). Tendances « +12 % / +8 % » factices retirées.
+- 40 tests ; essai de bout en bout sur les paquets extraits (activation des deux comptes, clé des données, association, outil du portable).
 
 ## 7. Technique (site public sur Cloudflare)
 

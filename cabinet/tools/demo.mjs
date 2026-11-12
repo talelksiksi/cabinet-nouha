@@ -133,6 +133,12 @@ async function startPortable() {
     process.stdout.write('Création du cabinet de démonstration (comptes, patients, agenda)… ');
     const t0 = Date.now(), n = await seed();
     console.log(`${n} enregistrements chiffrés en ${((Date.now() - t0) / 1000).toFixed(1)} s.`);
+    // comme une vraie installation : les comptes du Dr Nouha et de l'administrateur sont protégés
+    const { DatabaseSync } = await import('node:sqlite');
+    const ddb = new DatabaseSync(path.join(DATA, 'cabinet.db'));
+    ddb.exec('PRAGMA busy_timeout = 5000');
+    ddb.prepare(`UPDATE users SET protected = 1 WHERE username IN ('talel', 'nouha')`).run();
+    ddb.close();
   }
   if (PORTABLE) await startPortable();
   console.log(`\n  ➜ Cabinet : ${BASE}${PORTABLE ? `\n  ➜ Portable du Dr Nouha : http://localhost:${PORT_P}  (Dr Nouha et administrateur uniquement)` : ''}\n  ➜ Identifiants : ${path.join(DATA, 'COMPTES-DEMO.txt')}\n  (Ctrl+C pour arrêter)\n`);

@@ -52,7 +52,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
       perms: u.perms, scope: u.scope, status: u.status, hasDataKey: hasKey(u.id), lastLogin: u.last_login,
       createdAt: u.created_at, createdBy: u.created_by, createdByName: nameOf(u.created_by),
       passwordAge: u.password_changed_at ? Date.now() - u.password_changed_at : null,
-      inviteExpires: u.status === 'invited' ? u.invite_expires : null };
+      inviteExpires: u.status === 'invited' ? u.invite_expires : null, protected: !!u.protected, activated: !!u.activated_at };
   }
 
   /* ── Journal ── */
@@ -99,7 +99,11 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
   const needActive = ctx => { const u = needUser(ctx); if (u.status !== 'active') fail(403, 'not_active', 'Compte en attente d\'activation.'); return u; };
   const needManager = ctx => { const u = needUser(ctx); if (!['admin', 'superadmin'].includes(u.kind) || u.status !== 'active') fail(403, 'forbidden', 'Réservé aux administrateurs.'); return u; };
   const needKeyHolder = ctx => { const u = needManager(ctx); if (u.kind !== 'admin' || !hasKey(u.id)) fail(403, 'no_key', 'Réservé à un administrateur détenteur de la clé des données.'); return u; };
+  // Comptes protégés (Dr Nouha, administrateur informatique) : jamais modifiables depuis l'application
+  const PROTECTED_MSG = 'Compte protégé : il ne se modifie qu\'avec l\'outil « comptes protégés » du portable du Dr Nouha.';
+  function guardProtected(t) { if (t.protected) fail(403, 'protected', PROTECTED_MSG); }
   function canManage(actor, target) {
+    if (target.protected) return false;
     if (target.kind === 'superadmin') return actor.kind === 'superadmin' && actor.id === target.id;
     return true;
   }
@@ -131,9 +135,9 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     if (!isText(b.displayName, 2, 80)) fail(400, 'bad_name', 'Nom affiché requis.');
     validateNewAuth(b);
     const id = newId(), now = Date.now();
-    run(`INSERT INTO users (id, username, display_name, kind, role_label, perms, scope, status, auth_hash, kdf_salt, kdf_iter, password_changed_at, created_at, updated_at)
-         VALUES (?, ?, ?, 'superadmin', 'Administrateur informatique', '{}', 'all', 'active', ?, ?, ?, ?, ?, ?)`,
-      id, username, b.displayName.trim(), authHash(id, b.authKey), b.kdfSalt, b.kdfIter, now, now, now);
+    run(`INSERT INTO users (id, username, display_name, kind, role_label, perms, scope, status, auth_hash, kdf_salt, kdf_iter, password_changed_at, activated_at, created_at, updated_at)
+         VALUES (?, ?, ?, 'superadmin', 'Administrateur informatique', '{}', 'all', 'active', ?, ?, ?, ?, ?, ?, ?)`,
+      id, username, b.displayName.trim(), authHash(id, b.authKey), b.kdfSalt, b.kdfIter, now, now, now, now);
     ctx.user = getUser(id);
     audit(ctx, 'installation', id);
     createSession(ctx, ctx.user);
@@ -226,8 +230,8 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     }
     tx(db, () => {
       run(`UPDATE users SET status = ?, auth_hash = ?, kdf_salt = ?, kdf_iter = ?, pub_key = ?, priv_key_enc = ?, password_changed_at = ?,
-           invite_hash = NULL, invite_expires = NULL, invite_dek = NULL, failed_logins = 0, locked_until = 0, updated_at = ? WHERE id = ?`,
-        status, authHash(u.id, b.authKey), b.kdfSalt, b.kdfIter, b.pubKey || null, b.privKeyEnc || null, now, now, u.id);
+           invite_hash = NULL, invite_expires = NULL, invite_dek = NULL, failed_logins = 0, locked_until = 0, activated_at = COALESCE(activated_at, ?), updated_at = ? WHERE id = ?`,
+        status, authHash(u.id, b.authKey), b.kdfSalt, b.kdfIter, b.pubKey || null, b.privKeyEnc || null, now, now, now, u.id);
       if (wrapped) run('INSERT OR REPLACE INTO user_keys (user_id, wrapped_dek, granted_by, granted_at) VALUES (?, ?, ?, ?)', u.id, wrapped, u.created_by, now);
     });
     ctx.user = getUser(u.id);
@@ -273,6 +277,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
   route('PATCH', '/api/users/:id', (ctx, b, p) => {
     const actor = needManager(ctx);
     const t = getUser(p.id) || fail(404, 'not_found', 'Compte introuvable.');
+    guardProtected(t);
     if (!canManage(actor, t)) fail(403, 'forbidden', 'Ce compte ne peut pas être modifié ici.');
     const changes = {};
     if (b.displayName != null) { if (!isText(b.displayName, 2, 80)) fail(400, 'bad_name', 'Nom invalide.'); changes.display_name = b.displayName.trim(); }
@@ -296,6 +301,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
   route('POST', '/api/users/:id/disable', (ctx, b, p) => {
     const actor = needManager(ctx);
     const t = getUser(p.id) || fail(404, 'not_found', 'Compte introuvable.');
+    guardProtected(t);
     if (t.id === actor.id) fail(400, 'self', 'Vous ne pouvez pas désactiver votre propre compte.');
     if (!canManage(actor, t)) fail(403, 'forbidden', 'Ce compte ne peut pas être désactivé ici.');
     if (isLastKeyHolder(t.id)) fail(409, 'last_admin', 'C\'est le dernier administrateur détenant la clé des données : impossible de le désactiver.');
@@ -306,6 +312,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
   route('POST', '/api/users/:id/enable', (ctx, b, p) => {
     const actor = needManager(ctx);
     const t = getUser(p.id) || fail(404, 'not_found', 'Compte introuvable.');
+    guardProtected(t);
     if (!canManage(actor, t) || t.status !== 'disabled') fail(400, 'bad_state', 'Ce compte n\'est pas désactivé.');
     // la clé des données a été retirée : il faudra la ré-autoriser (ou réinitialiser le compte)
     const status = t.auth_hash ? (t.kind === 'superadmin' ? 'active' : 'pending_key') : 'invited';
@@ -317,6 +324,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
   route('POST', '/api/users/:id/reset', (ctx, b, p) => {
     const actor = needManager(ctx);
     const t = getUser(p.id) || fail(404, 'not_found', 'Compte introuvable.');
+    guardProtected(t);
     if (t.id === actor.id) fail(400, 'self', 'Pour votre propre compte, utilisez « Changer mon mot de passe ».');
     if (!canManage(actor, t)) fail(403, 'forbidden', 'Ce compte ne peut pas être réinitialisé ici.');
     inviteFields(b);

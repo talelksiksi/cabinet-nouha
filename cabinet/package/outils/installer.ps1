@@ -1,6 +1,7 @@
 # ═══════════════════════════════════════════
 #  Espace cabinet Dr Nouha Ksiksi — installation / mise à jour
 #  Lancé par INSTALLER.cmd (droits administrateur). Rien à télécharger : tout est dans ce dossier.
+#  Paquet « Staff » : PC du cabinet.  Paquet « Owner » : portable du Dr Nouha (-Portable).
 #  Programme : C:\EspaceCabinet\app   Données : C:\EspaceCabinet\data (jamais effacées par une mise à jour)
 #  -Portable : ordinateur portable du Dr Nouha (copie synchronisée, accessible uniquement sur le portable lui-même)
 # ═══════════════════════════════════════════
@@ -46,7 +47,7 @@ foreach ($port in $ports) {
 $cfgFile = "$Dest\data\config.json"
 if ($update -and (Test-Path $cfgFile)) {
   $wasPortable = (Get-Content $cfgFile -Raw | ConvertFrom-Json).role -eq 'nomade'
-  if ($wasPortable -ne [bool]$Portable) { Stop-Install "Ce PC est déjà installé comme $(if ($wasPortable) { 'PORTABLE (utilisez INSTALLER-PORTABLE.cmd)' } else { 'PC DU CABINET (utilisez INSTALLER.cmd)' })." }
+  if ($wasPortable -ne [bool]$Portable) { Stop-Install "Ce PC est déjà installé comme $(if ($wasPortable) { 'PORTABLE du Dr Nouha (utilisez le paquet Install-Package-Owner)' } else { 'PC DU CABINET (utilisez le paquet Install-Package-Staff)' })." }
 }
 Ok 'PC compatible'
 
@@ -62,6 +63,14 @@ Copy-Item -Force "$Src\*.cmd", "$Src\*.html", "$Src\*.txt" $Dest -ErrorAction Si
 icacls "$Dest\data" /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
 if ($Portable) { Set-Content -Path $cfgFile -Value ('{ "role": "nomade", "plainPort": ' + $Port + ' }') -Encoding ASCII }
 Ok 'Programme copié ; dossier des données protégé'
+
+if (-not $Portable) {
+  # ── Comptes protégés : Dr Nouha et administrateur informatique, créés d'avance avec un code d'activation ──
+  Etape 'Comptes du Dr Nouha et de l''administrateur informatique'
+  $codes = & "$Dest\node\node.exe" --no-warnings "$Dest\app\tools\comptes.mjs" init 2>&1
+  if ($LASTEXITCODE -ne 0) { $codes | ForEach-Object { Write-Host $_ }; Stop-Install 'Création des comptes impossible.' }
+  Ok 'Comptes prêts (identifiants : nouha et talel)'
+}
 
 # ── Démarrage automatique (tâche planifiée, même sans session ouverte) ──
 Etape 'Démarrage automatique avec Windows'
@@ -147,11 +156,13 @@ if ($Portable) {
 Write-Host "  Adresse :            https://$Name"
 Write-Host "  Adresse IP du PC :   $ip   (à réserver dans la box, voir le guide)"
 Write-Host "  Autres appareils :   ouvrir http://$Name/certificat (une fois par appareil)"
-if (-not $update) {
-  $token = (Get-Content "$Dest\data\secrets.json" -Raw | ConvertFrom-Json).setupToken
-  Write-Host ''
-  Write-Host "  CODE D'INSTALLATION : $token" -ForegroundColor Yellow
-  Write-Host '  (à saisir sur la page qui s''ouvre, pour créer le compte administrateur informatique)'
+if ($codes -match 'code : ') {
+Write-Host ''
+$codes | ForEach-Object { if ($_ -match 'code : ') { Write-Host $_ -ForegroundColor Yellow } else { Write-Host $_ } }
+Write-Host ''
+Write-Host '  Recopiez ces codes maintenant (ils ne sont enregistrés nulle part) ; chacun active SON compte' -ForegroundColor Yellow
+Write-Host '  sur la page qui s''ouvre : « Première connexion (code d''activation ou d''invitation) ».' -ForegroundColor Yellow
+Write-Host '  Code perdu ou expiré avant activation : relancer INSTALLER.cmd (nouveaux codes, rien d''autre ne change).'
 }
 Write-Host ''
 Start-Process "https://$Name/"

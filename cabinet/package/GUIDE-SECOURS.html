@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Espace cabinet — guide de secours</title>
+<style>
+:root { --navy: #16325c; --gold: #c9a24b; --ink: #1a2433; --muted: #5d6878; --bg: #faf8f4; --line: #e3e6ec; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; }
+main { max-width: 860px; margin: 0 auto; padding: 2rem 1.2rem 4rem; }
+h1 { color: var(--navy); margin: 0 0 .2rem; font-size: 1.7rem; }
+h2 { color: var(--navy); font-size: 1.15rem; margin: 2rem 0 .6rem; padding-top: 1rem; border-top: 2px solid var(--line); }
+h2 span { display: inline-grid; place-items: center; min-width: 1.8rem; height: 1.8rem; padding: 0 .3rem; border-radius: 999px; background: var(--gold); color: #fff; font-size: .95rem; margin-right: .5rem; }
+.lead { color: var(--muted); margin-top: 0; }
+.box { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: .9rem 1.1rem; margin: .8rem 0; }
+.warn { background: #fff7ed; border-color: #f5d38a; }
+.ok { background: #f0faf4; border-color: #b7e0c5; }
+code { background: #eef1f6; padding: .1rem .4rem; border-radius: 5px; font-family: Consolas, monospace; font-size: .92em; }
+ol, ul { padding-left: 1.3rem; } li { margin: .3rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+td, th { border: 1px solid var(--line); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+th { background: #f3f5f8; }
+@media print { body { background: #fff; } h2 { break-after: avoid; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Espace cabinet — guide de secours</h1>
+<p class="lead">Perte, vol, panne, oubli : que faire, cas par cas. À imprimer et ranger avec la feuille de secours.</p>
+
+<h2><span>0</span>Ce qu'il faut avoir, toujours</h2>
+<table>
+<tr><th>Élément</th><th>Qui / où</th><th>Sert à</th></tr>
+<tr><td><b>Feuille de secours</b> (clé des données)</td><td>Dr Nouha · imprimée à la mise en service · sous enveloppe, <b>hors du cabinet</b></td><td>Retrouver l'accès aux dossiers après un mot de passe oublié. Égarée : <b>Mon compte → Imprimer une nouvelle feuille</b> (l'ancienne ne marche plus).</td></tr>
+<tr><td><b>Clé de sauvegarde</b></td><td>Talel · <b>Sauvegardes &amp; système → Imprimer la clé de sauvegarde</b> · avec la feuille de secours</td><td>Restaurer une sauvegarde sur un <b>autre</b> PC.</td></tr>
+<tr><td><b>Clé USB des sauvegardes</b></td><td>Copie chaque mardi (bandeau à 11 h) · emportée <b>hors du cabinet</b></td><td>Repartir si le PC du cabinet est perdu (8 semaines de copies).</td></tr>
+<tr><td><b>Portable du Dr Nouha</b></td><td>Copie complète, synchronisée à chaque passage au cabinet</td><td>Continuer à travailler si le PC du cabinet tombe ; compléter une restauration ; outil « comptes protégés ».</td></tr>
+</table>
+<div class="box ok">Les dossiers sont <b>chiffrés partout</b> (PC du cabinet, portable, sauvegardes, clé USB). Un PC ou une clé volés ne livrent rien
+sans un mot de passe de l'équipe. Talel lui-même ne peut pas lire les dossiers.</div>
+
+<h2><span>A</span>Le portable du Dr Nouha est perdu, volé ou en panne</h2>
+<ol>
+<li><b>Tout de suite</b>, sur un PC du cabinet (Dr Nouha ou Talel) : <b>Sauvegardes &amp; système → Portables associés → Retirer</b>.
+Le portable ne peut plus rien envoyer ni recevoir, y compris des demandes de l'outil « comptes protégés ».</li>
+<li>Par précaution, le Dr Nouha change son mot de passe : <b>Mon compte</b> (au cabinet).</li>
+<li>Ce qui est perdu : uniquement les modifications faites sur le portable <b>et pas encore synchronisées</b> (travail fait à la maison depuis le dernier passage au cabinet).</li>
+<li>Nouveau portable : paquet <b>Owner</b>, <code>INSTALLER.cmd</code>, puis association au cabinet (<code>GUIDE-PORTABLE.html</code>, étape 3). L'outil « comptes protégés » suit le nouveau portable.</li>
+</ol>
+
+<h2><span>B</span>Le PC du cabinet est en panne ou volé</h2>
+<p><b>En attendant</b> : le Dr Nouha continue sur son portable (copie complète). Les assistantes notent sur papier.</p>
+<ol>
+<li>Sur le PC de remplacement (ou le même PC réparé/réinstallé) : paquet <b>Staff</b>, <code>INSTALLER.cmd</code>.
+Les deux codes d'activation affichés <b>ne servent pas</b> ici : la restauration remet les comptes existants.</li>
+<li>Lancer <code>RESTAURER.cmd</code> → choisir la sauvegarde la plus récente (<code>.cnbk</code>) sur la <b>clé USB</b> → saisir la <b>clé de sauvegarde</b> imprimée → taper <code>oui</code>.</li>
+<li>Résultat : dossiers, comptes et <b>mots de passe de chacun</b> reviennent tels quels ; le <b>même certificat</b> est repris
+(les autres PC du cabinet n'ont rien à refaire) ; le portable reconnaît le nouveau PC.</li>
+<li>Si le PC a changé d'adresse IP : refaire la réservation dans la box (guide d'installation, étape 5).</li>
+<li>Apporter le <b>portable du Dr Nouha</b> au cabinet : à sa synchronisation, il <b>renvoie automatiquement tout ce que la sauvegarde USB n'avait pas</b>
+(tout ce qu'il avait reçu ou envoyé jusqu'à la panne). Rien à faire.</li>
+</ol>
+<div class="box warn"><b>Ce qui peut manquer</b> : ce qui a été saisi au cabinet après la dernière copie USB <b>et</b> que le portable n'avait pas encore reçu
+(par exemple, le travail de l'après-midi si le portable était parti avant). D'où l'intérêt de la copie USB du mardi et des passages réguliers du portable au cabinet.
+<b>En cas de vol</b> : faire changer les mots de passe de toute l'équipe, et voir avec l'INPDP si une déclaration de l'incident est nécessaire.</div>
+
+<h2><span>C</span>Les deux sont perdus (incendie, cambriolage)</h2>
+<ol>
+<li>PC de remplacement : cas <b>B</b>, avec la clé USB et la clé de sauvegarde (rangées hors du cabinet).</li>
+<li>Nouveau portable : cas <b>A</b>, étape 4.</li>
+<li>Ce qui est perdu : ce qui a été fait après la dernière copie USB.</li>
+</ol>
+
+<h2><span>D</span>Le Dr Nouha a oublié son mot de passe</h2>
+<ol>
+<li>Sur <b>son portable</b> : <code>COMPTES-PROTEGES.cmd</code> → choix <b>1</b> → <code>OUI</code> → recopier le nouveau code.</li>
+<li>Portable au cabinet (Wi-Fi) : la demande arrive en moins d'une minute.</li>
+<li>Sur un PC du cabinet : <b>Première connexion (code d'activation ou d'invitation)</b> → <code>nouha</code> + code → nouveau mot de passe.</li>
+<li>L'application demande la <b>feuille de secours</b> : la saisir, l'accès aux dossiers revient.</li>
+</ol>
+<p><b>Et si le portable est aussi perdu ?</b> Talel se connecte au cabinet, associe un nouveau portable (cas <b>A</b>), puis fait l'étape 1 depuis celui-ci.</p>
+
+<h2><span>E</span>Talel a oublié son mot de passe</h2>
+<p>Même chemin que <b>D</b>, choix <b>2</b> dans l'outil, identifiant <code>talel</code>. Pas de feuille de secours : ce compte n'a pas accès aux dossiers.</p>
+
+<h2><span>F</span>Un membre de l'équipe a oublié son mot de passe, ou part</h2>
+<ul>
+<li>Oubli : Dr Nouha ou Talel → <b>Utilisateurs</b> → clé « Nouveau code » → la personne active son compte et choisit un nouveau mot de passe.</li>
+<li>Départ, fin de remplacement : <b>Désactiver</b> (accès coupé immédiatement, y compris s'il était connecté).</li>
+</ul>
+
+<h2><span>G</span>Papiers égarés</h2>
+<ul>
+<li><b>Feuille de secours</b> : Dr Nouha → <b>Mon compte → Imprimer une nouvelle feuille</b>. L'ancienne cesse de fonctionner.</li>
+<li><b>Clé de sauvegarde</b> : Talel → <b>Sauvegardes &amp; système → Imprimer la clé de sauvegarde</b> (tant que le PC du cabinet fonctionne).</li>
+<li><b>Code d'activation</b> pas encore utilisé à l'installation : relancer <code>INSTALLER.cmd</code> sur le PC du cabinet.</li>
+</ul>
+
+<h2><span>H</span>Coupure de courant</h2>
+<p>Rien à faire : au redémarrage du PC, le serveur repart seul et la sauvegarde manquée (11 h 30 ou 15 h 45) est faite immédiatement.</p>
+
+<h2><span>!</span>Le seul cas sans solution</h2>
+<div class="box warn">Mot de passe du Dr Nouha oublié <b>et</b> feuille de secours perdue, sans autre administrateur ayant accès aux dossiers :
+les dossiers restent chiffrés pour toujours. C'est le prix de la confidentialité : garder la feuille de secours en lieu sûr, hors du cabinet.
+(Si le Dr Nouha a donné le type « Dentiste + administration » à un autre praticien, celui-ci peut lui rendre l'accès dans <b>Utilisateurs</b>.)</div>
+</main>
+</body>
+</html>

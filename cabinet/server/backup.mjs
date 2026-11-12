@@ -12,7 +12,8 @@ import zlib from 'node:zlib';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 
-const MAGIC = Buffer.from('CNBK1');           // en-tête des fichiers de sauvegarde
+const MAGIC1 = Buffer.from('CNBK1');          // ancien format : la base seule
+const MAGIC = Buffer.from('CNBK2');           // en-tête des fichiers de sauvegarde : identité du serveur + base
 const USB_DIR = 'Sauvegardes-Cabinet-Nouha';
 const USB_KEEP = 8;                           // 8 semaines sur la clé
 
@@ -22,19 +23,36 @@ export function createBackup({ db, cfg, log = () => {}, now = () => new Date() }
   const pad = n => String(n).padStart(2, '0');
   const stamp = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 
+  /* Identité du serveur, jointe à chaque sauvegarde (chiffrée avec elle) : sur un PC de remplacement, la restauration
+     redonne le même « poivre » (les mots de passe de tous restent valables) et, au cabinet, la même autorité de
+     certificat (les postes et le portable reconnaissent le nouveau PC sans rien réinstaller). */
+  function identity() {
+    const id = { pepper: cfg.secrets.pepper };
+    const ca = path.join(cfg.tlsDir || '', 'ca.crt'), caKey = path.join(cfg.tlsDir || '', 'ca.key');
+    if (cfg.role !== 'nomade' && cfg.tlsDir && fs.existsSync(ca) && fs.existsSync(caKey))
+      id.tls = { 'ca.crt': fs.readFileSync(ca, 'utf8'), 'ca.key': fs.readFileSync(caKey, 'utf8') };
+    return id;
+  }
   function encrypt(plain) {
+    const head = Buffer.from(JSON.stringify(identity()), 'utf8'), len = Buffer.alloc(4);
+    len.writeUInt32BE(head.length);
     const iv = crypto.randomBytes(12);
     const c = crypto.createCipheriv('aes-256-gcm', key, iv);
-    const ct = Buffer.concat([c.update(zlib.gzipSync(plain)), c.final()]);
+    const ct = Buffer.concat([c.update(zlib.gzipSync(Buffer.concat([len, head, plain]))), c.final()]);
     return Buffer.concat([MAGIC, iv, c.getAuthTag(), ct]);
   }
-  /** Déchiffre un fichier de sauvegarde (vérifie au passage qu'il est intact). */
-  function decrypt(buf, k = key) {
-    if (!buf.subarray(0, 5).equals(MAGIC)) throw new Error('Fichier de sauvegarde non reconnu');
+  /** Déchiffre un fichier de sauvegarde (vérifie au passage qu'il est intact) → { db, identity }. */
+  function decryptFull(buf, k = key) {
+    const v2 = buf.subarray(0, 5).equals(MAGIC);
+    if (!v2 && !buf.subarray(0, 5).equals(MAGIC1)) throw new Error('Fichier de sauvegarde non reconnu');
     const d = crypto.createDecipheriv('aes-256-gcm', k, buf.subarray(5, 17));
     d.setAuthTag(buf.subarray(17, 33));
-    return zlib.gunzipSync(Buffer.concat([d.update(buf.subarray(33)), d.final()]));
+    const plain = zlib.gunzipSync(Buffer.concat([d.update(buf.subarray(33)), d.final()]));
+    if (!v2) return { db: plain, identity: null };
+    const n = plain.readUInt32BE(0);
+    return { db: plain.subarray(4 + n), identity: JSON.parse(plain.subarray(4, 4 + n).toString('utf8')) };
   }
+  const decrypt = (buf, k = key) => decryptFull(buf, k).db;
 
   let running = Promise.resolve();
   /** Instantané cohérent de la base (VACUUM INTO), chiffré, écrit dans le dossier des sauvegardes. */
@@ -156,5 +174,5 @@ export function createBackup({ db, cfg, log = () => {}, now = () => new Date() }
     return { ok: true, file: b.file, size: b.size, drive, kept: Math.min(old.length, USB_KEEP) };
   }
 
-  return { run, tick, start, stop, status, removableDrives, toUsb, decrypt, lastSlot, nextSlot, lastUsbReminder };
+  return { run, tick, start, stop, status, removableDrives, toUsb, decrypt, decryptFull, lastSlot, nextSlot, lastUsbReminder };
 }

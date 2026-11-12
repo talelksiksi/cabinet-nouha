@@ -78,3 +78,6 @@
   .usb-banner, .access-banner { margin: .8rem .8rem 0; flex-wrap: wrap; }
   .perm-matrix { font-size: .78rem; }
 }
+
+/* Comptes protégés */
+.perm-chip.locked { background: #fff4e0; color: #8a5a00; border: 1px solid #f0d49a; }

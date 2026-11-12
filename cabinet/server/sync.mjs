@@ -17,6 +17,7 @@ import http from 'node:http';
 import https from 'node:https';
 import dns from 'node:dns';
 import mdnsFactory from 'multicast-dns';
+import { applyProtectedOp } from './accounts.mjs';
 
 const CODE_TTL = 15 * 60e3;
 const SYNC_EVERY = 60e3;
@@ -108,7 +109,11 @@ export function createSync(h) {
         if (!h.COLLECTIONS[r.c] || !/^[A-Za-z0-9._-]{1,64}$/.test(r.id)) { out.push({ c: r.c, id: r.id, error: 'invalide' }); continue; }
         const cur = q('SELECT * FROM records WHERE collection = ? AND id = ?', r.c, r.id);
         const curV = cur ? cur.updated_at : null;
-        if ((r.base ?? null) !== curV) {
+        if (b.heal) {
+          // Cabinet restauré depuis une sauvegarde : le portable renvoie ce qu'il avait déjà reçu ou envoyé.
+          // On ne reprend que ce que le cabinet a perdu (sa version est plus ancienne que celle que le portable connaissait).
+          if (cur && !(curV < (r.base ?? 0))) { out.push({ c: r.c, id: r.id, skip: true }); continue; }
+        } else if ((r.base ?? null) !== curV) {
           // déjà appliqué (réponse perdue) : même contenu → simple confirmation
           if (cur && cur.iv === (r.iv ?? null) && cur.data === (r.data ?? null) && !!cur.deleted === !!r.deleted) { out.push({ c: r.c, id: r.id, v: curV }); continue; }
           out.push({ c: r.c, id: r.id, conflict: cur ? { iv: cur.iv, data: cur.data, owners: cur.owners, deleted: !!cur.deleted, v: curV, by: cur.updated_by } : { deleted: true, v: null } });
@@ -136,7 +141,9 @@ export function createSync(h) {
       const ids = users.filter(u => u.kind === 'admin').map(u => u.id);
       const keys = qa('SELECT * FROM user_keys').filter(k => ids.includes(k.user_id));
       const meta = qa(`SELECT * FROM meta WHERE key = 'recovery_dek'`);
-      return { users, keys, meta };
+      // « époque » de la base : change à chaque restauration de sauvegarde (le portable renvoie alors ce qui manque)
+      const epoch = q(`SELECT value FROM meta WHERE key = 'epoch'`)?.value || 'initial';
+      return { users, keys, meta, epoch };
     });
     // Journal du portable versé dans celui du cabinet
     route('POST', '/api/sync/audit', (ctx, b) => {
@@ -148,6 +155,20 @@ export function createSync(h) {
         n++;
       }
       return { n };
+    });
+    // Outil « comptes protégés » du portable (droits administrateur Windows sur le portable du Dr Nouha) :
+    // seule voie pour réinitialiser ou renommer le compte du Dr Nouha ou de l'administrateur informatique
+    route('POST', '/api/sync/protected', (ctx, b) => {
+      needNode(ctx);
+      const results = [];
+      for (const op of (Array.isArray(b.ops) ? b.ops : []).slice(0, 20)) {
+        const r = applyProtectedOp(db, cfg, op);
+        const u = q('SELECT id FROM users WHERE username = ?', String(op.username || ''));
+        audit({ ...ctx, username: 'outil du portable' }, r.ok ? (op.op === 'reset' ? 'compte_protege_reinitialise' : 'compte_protege_renomme') : 'compte_protege_refuse',
+          u?.id || null, r.ok ? null : { raison: r.error });
+        results.push({ id: op.id, ...r });
+      }
+      return { results };
     });
     // Action d'administration faite sur le portable, exécutée ici au nom de la personne connectée là-bas
     route('POST', '/api/sync/act', async (ctx, b) => {
@@ -224,7 +245,7 @@ export function createSync(h) {
     const buf = Buffer.from(r.ct, 'base64'), d = crypto.createDecipheriv('aes-256-gcm', K, Buffer.from(r.iv, 'base64'));
     d.setAuthTag(buf.subarray(buf.length - 16));
     const secret = JSON.parse(Buffer.concat([d.update(buf.subarray(0, buf.length - 16)), d.final()]).toString('utf8'));
-    Object.assign(S, { paired: true, nodeId: secret.nodeId, token: secret.token, caPem: r.caPem || null, cursor: 0, auditPushed: q('SELECT COALESCE(MAX(id), 0) m FROM audit').m });
+    Object.assign(S, { paired: true, nodeId: secret.nodeId, token: secret.token, caPem: r.caPem || null, cursor: 0, heal: null, auditPushed: q('SELECT COALESCE(MAX(id), 0) m FROM audit').m });
     // même « poivre » que le cabinet : les mots de passe du Dr Nouha et de l'administrateur fonctionnent ici à l'identique
     cfg.secrets.pepper = secret.pepper;
     fs.writeFileSync(path.join(cfg.dataDir, 'secrets.json'), JSON.stringify(cfg.secrets, null, 2), { mode: 0o600 });
@@ -307,19 +328,62 @@ export function createSync(h) {
       S.auditPushed = entries[entries.length - 1].id; save();
     }
   }
+  /* Demandes de l'outil « comptes protégés » en attente → cabinet */
+  async function pushProtected() {
+    const ops = qa('SELECT * FROM protected_ops WHERE sent_at IS NULL ORDER BY created_at');
+    if (!ops.length) return 0;
+    const r = await call('POST', '/api/sync/protected', { ops: ops.map(o => ({ id: o.id, op: o.op, username: o.username, payload: o.payload })) });
+    for (const x of r.results || []) run('UPDATE protected_ops SET sent_at = ?, result = ? WHERE id = ?', Date.now(), JSON.stringify(x), x.id);
+    return ops.length;
+  }
   let running = null;
-  async function syncAccounts() { applyAccounts(await call('GET', '/api/sync/accounts')); }
+  async function syncAccounts() {
+    const a = await call('GET', '/api/sync/accounts');
+    applyAccounts(a);
+    if (!S.epoch) { S.epoch = a.epoch; save(); }
+    else if (a.epoch !== S.epoch) { S.heal = a.epoch; save(); log('Le PC du cabinet a été restauré depuis une sauvegarde : renvoi de ce qui lui manque'); }
+  }
+  /* Après une restauration au cabinet : renvoi de tout ce que le portable connaît ; le cabinet ne garde que ce qu'il a perdu */
+  async function heal() {
+    let after = '', healed = 0;
+    for (;;) {
+      const page = [];
+      let size = 0;
+      for (const r of qa(`SELECT r.*, b.hash phone, r.collection || '/' || r.id k FROM records r
+                           LEFT JOIN blind_index b ON b.collection = r.collection AND b.record_id = r.id AND b.field = 'phone'
+                           WHERE r.remote_v IS NOT NULL AND r.conflict IS NULL AND r.collection || '/' || r.id > ? ORDER BY k LIMIT 100`, after)) {
+        size += (r.data?.length || 0) + 500;
+        if (page.length && size > 8e6) break;
+        page.push(r);
+      }
+      if (!page.length) break;
+      after = page[page.length - 1].k;
+      const res = await call('POST', '/api/sync/push', { heal: true, rows: page.map(r => ({ c: r.collection, id: r.id, iv: r.iv, data: r.data, owners: r.owners, deleted: !!r.deleted, base: r.remote_v, by: r.updated_by, phone: r.phone })) });
+      tx(db, () => {
+        for (const x of res.results) {
+          const local = page.find(r => r.collection === x.c && r.id === x.id); if (!local || x.v == null) continue;
+          run('UPDATE records SET remote_v = ?, dirty = CASE WHEN updated_at = ? THEN 0 ELSE dirty END WHERE collection = ? AND id = ?', x.v, local.updated_at, x.c, x.id);
+          healed++;
+        }
+      });
+    }
+    Object.assign(S, { epoch: S.heal, heal: null, cursor: 0 }); save();
+    log(`Restauration du cabinet complétée par le portable : ${healed} élément(s) renvoyé(s)`);
+    return healed;
+  }
   function syncOnce() {
     if (!S.paired) return Promise.resolve({ ok: false, error: 'Portable non associé' });
     if (running) return running;
     running = (async () => {
       try {
         if (!(await discover())) throw Object.assign(new Error('Hors du cabinet : le PC du cabinet est introuvable sur ce réseau.'), { status: 503 });
+        if (await pushProtected()) log('Demandes de l\'outil « comptes protégés » transmises au cabinet');
         await syncAccounts();
+        const healed = S.heal ? await heal() : 0;
         const p = await push(), l = await pull();
         await pushAudit();
         Object.assign(S, { lastSync: Date.now(), reachable: true, lastError: null }); save();
-        return { ok: true, sent: p.sent, received: l.got, conflicts: conflictCount() };
+        return { ok: true, sent: p.sent + healed, received: l.got, conflicts: conflictCount(), ...(healed ? { healed } : {}) };
       } catch (e) {
         Object.assign(S, { reachable: false, lastError: e.status === 401 ? 'Ce portable a été retiré au cabinet : associez-le de nouveau.' : e.message }); save();
         if (e.status === 401) { S.paired = false; save(); }

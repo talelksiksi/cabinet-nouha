@@ -24,7 +24,7 @@ La démo lance aussi le portable du Dr Nouha sur <http://localhost:3476>, déjà
 
 ## Portable du Dr Nouha (mode « nomade »)
 
-Même programme, installé avec `INSTALLER-PORTABLE.cmd` : il tourne seulement sur le portable (<http://localhost:3475>),
+Même programme, installé avec le paquet `Install-Package-Owner` : il tourne seulement sur le portable (<http://localhost:3475>),
 n'accepte que le Dr Nouha (tous ses droits) et l'administrateur informatique (ses droits habituels, sans les dossiers).
 Association une seule fois : au cabinet, *Sauvegardes & système → Portables associés → Associer* donne un code de 15 min
 à saisir sur le portable. Ensuite, dès que les deux sont sur le Wi-Fi du cabinet, tout se synchronise (toutes les 60 s ou
@@ -32,13 +32,30 @@ Association une seule fois : au cabinet, *Sauvegardes & système → Portables a
 le Dr Nouha choisit la version à garder (*Conflits à trancher*). Les actions d'administration (comptes, accès) faites sur le
 portable sont transmises au cabinet ; le journal du portable y remonte aussi. Un portable perdu se retire depuis le cabinet.
 
-## Paquet d'installation
+## Paquets d'installation
 
 ```bash
-node tools/build-package.mjs     # → dist/EspaceCabinet-AAAA.MM.JJ.zip (Node.js inclus, rien à installer)
+node tools/build-package.mjs     # → dist/Install-Package-Staff-AAAA.MM.JJ.zip et dist/Install-Package-Owner-AAAA.MM.JJ.zip
 ```
 
-Sur le PC du cabinet : extraire, double-cliquer `INSTALLER.cmd`, suivre `GUIDE-INSTALLATION.html`.
+- **Staff** : PC du cabinet (`INSTALLER.cmd`, crée les comptes protégés `nouha` et `talel` et affiche leurs codes d'activation)
+  et autres PC du cabinet (`POSTE-CABINET.cmd` : certificat + raccourci). Guides : `GUIDE-INSTALLATION.html`, `GUIDE-SECOURS.html`.
+- **Owner** : portable du Dr Nouha (`INSTALLER.cmd`, `COMPTES-PROTEGES.cmd`). Guides : `GUIDE-PORTABLE.html`, `GUIDE-SECOURS.html`.
+- Node.js inclus, aucune donnée ni compte de démonstration.
+
+## Comptes protégés
+
+`nouha` (titulaire, admin) et `talel` (administrateur informatique) sont créés par l'installation du cabinet (`tools/comptes.mjs init`),
+chacun avec un code d'activation (72 h). Dans l'application, personne ne peut les modifier, désactiver ni réinitialiser ; chacun change
+son propre mot de passe. Seul `tools/comptes.mjs reinitialiser|renommer` sur le portable (droits administrateur Windows) peut les toucher :
+la demande part au cabinet à la synchronisation (jeton du portable associé). Une réinitialisation ne rend jamais l'accès aux dossiers
+(feuille de secours nécessaire).
+
+## Restauration sur un PC de remplacement
+
+Les sauvegardes (format `CNBK2`) emportent l'identité du serveur (poivre, autorité de certificat) : `RESTAURER.cmd` + clé de sauvegarde
+sur un nouveau PC → mêmes mots de passe, même certificat. La base restaurée change d'« époque » : le portable renvoie alors
+automatiquement ce qu'il connaît et que la sauvegarde n'avait pas.
 
 ## Première installation
 

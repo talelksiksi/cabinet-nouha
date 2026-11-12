@@ -23,33 +23,17 @@
 <body>
 <main>
   <h1>Espace cabinet — première connexion sur cet appareil</h1>
-  <p class="lead">À faire une seule fois par ordinateur ou téléphone. Ce certificat permet une connexion chiffrée avec le serveur du cabinet ; il ne sert qu'au réseau du cabinet.</p>
+  <p class="lead">À faire une seule fois par PC du cabinet. Le plus simple : lancer <b>POSTE-CABINET.cmd</b> (paquet Staff) sur ce PC, qui fait tout seul les étapes ci-dessous et crée le raccourci du bureau. Sinon, à la main :</p>
 
   <a class="dl" href="/cabinet-nouha-ca.crt">1. Télécharger le certificat du cabinet</a>
 
   <div class="card">
-    <h2>Ordinateur Windows</h2>
+    <h2>PC Windows (Edge ou Chrome)</h2>
     <ol>
       <li>Ouvrir le fichier <code>cabinet-nouha-ca.crt</code> téléchargé, puis <b>Installer le certificat…</b></li>
-      <li>Choisir <b>Ordinateur local</b> (ou Utilisateur actuel), puis <b>Placer tous les certificats dans le magasin suivant</b>.</li>
-      <li><b>Parcourir…</b> → <b>Autorités de certification racines de confiance</b> → OK → Suivant → Terminer → Oui.</li>
-      <li>Fermer complètement le navigateur et le rouvrir.</li>
-    </ol>
-  </div>
-  <div class="card">
-    <h2>Téléphone Android</h2>
-    <ol>
-      <li>Télécharger le certificat ci-dessus.</li>
-      <li><b>Paramètres</b> → <b>Sécurité</b> (ou Sécurité et confidentialité) → <b>Plus de paramètres</b> → <b>Chiffrement et identifiants</b> → <b>Installer un certificat</b> → <b>Certificat CA</b>.</li>
-      <li>Confirmer « Installer quand même », puis choisir le fichier <code>cabinet-nouha-ca.crt</code>.</li>
-    </ol>
-  </div>
-  <div class="card">
-    <h2>iPhone</h2>
-    <ol>
-      <li>Ouvrir cette page dans <b>Safari</b> et télécharger le certificat → « Autoriser ».</li>
-      <li><b>Réglages</b> → <b>Profil téléchargé</b> → <b>Installer</b>.</li>
-      <li><b>Réglages</b> → <b>Général</b> → <b>Informations</b> → <b>Réglages des certificats</b> → activer « Cabinet Dr Nouha Ksiksi ».</li>
+      <li>Choisir <b>Ordinateur local</b> (Windows demande l'accord d'un administrateur), puis <b>Suivant</b>.</li>
+      <li>Cocher <b>Placer tous les certificats dans le magasin suivant</b> → <b>Parcourir…</b> → <b>Autorités de certification racines de confiance</b> → OK → Suivant → Terminer.</li>
+      <li>Message « L'importation a réussi ». Fermer complètement le navigateur et le rouvrir.</li>
     </ol>
   </div>
 

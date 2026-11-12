@@ -1,8 +1,9 @@
 # ═══════════════════════════════════════════
 #  Espace cabinet — démarrer / arrêter / état / restaurer / désinstaller
-#  Usage : gerer.ps1 -Action demarrer|arreter|etat|restaurer|desinstaller
+#  Usage : gerer.ps1 -Action demarrer|arreter|etat|restaurer|desinstaller|comptes
+#  comptes : outil « comptes protégés », uniquement sur le portable du Dr Nouha
 # ═══════════════════════════════════════════
-param([Parameter(Mandatory)][ValidateSet('demarrer', 'arreter', 'etat', 'restaurer', 'desinstaller')] [string]$Action)
+param([Parameter(Mandatory)][ValidateSet('demarrer', 'arreter', 'etat', 'restaurer', 'desinstaller', 'comptes')] [string]$Action)
 $ErrorActionPreference = 'Stop'
 $Dest = 'C:\EspaceCabinet'
 $Task = 'Espace cabinet Nouha'
@@ -70,6 +71,39 @@ switch ($Action) {
     if ($key) { $args2 += @('--cle', $key.Trim()) }
     & "$Dest\node\node.exe" @args2
     Start-ScheduledTask -TaskName $Task
+    if (-not $IsPortable -and (Test-Path "$Dest\data\tls\ca.crt")) {
+      # PC de remplacement : le certificat du cabinet repris de la sauvegarde est approuvé sur ce PC
+      $ca = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 "$Dest\data\tls\ca.crt"
+      Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Subject -like '*Cabinet Dr Nouha Ksiksi*' -and $_.Thumbprint -ne $ca.Thumbprint } | Remove-Item -ErrorAction SilentlyContinue
+      Import-Certificate -FilePath "$Dest\data\tls\ca.crt" -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
+      Write-Host '✔ Certificat du cabinet approuvé sur ce PC' -ForegroundColor Green
+    }
+    Pause-End
+  }
+  'comptes' {
+    $node = "$Dest\node\node.exe"; $tool = "$Dest\app\tools\comptes.mjs"
+    if (-not $IsPortable) { Write-Host '✖ Cet outil ne fonctionne que sur le portable du Dr Nouha.' -ForegroundColor Red; Pause-End; exit 1 }
+    Write-Host '══ Comptes protégés : Dr Nouha et administrateur informatique ══' -ForegroundColor Cyan
+    & $node --no-warnings $tool etat
+    Write-Host ''
+    Write-Host '  1  Réinitialiser le compte du Dr Nouha    (mot de passe oublié)'
+    Write-Host '  2  Réinitialiser le compte de Talel       (mot de passe oublié)'
+    Write-Host '  3  Changer le nom affiché du Dr Nouha'
+    Write-Host '  4  Changer le nom affiché de Talel'
+    Write-Host '  Entrée : quitter sans rien changer'
+    $c = Read-Host 'Choix'
+    $who = if ($c -in '1', '3') { 'nouha' } elseif ($c -in '2', '4') { 'talel' } else { $null }
+    if (-not $who) { exit }
+    if ($c -in '1', '2') {
+      Write-Host ''
+      Write-Host "  Le mot de passe actuel de « $who » cessera de fonctionner partout (cabinet et portable)." -ForegroundColor Yellow
+      if ($who -eq 'nouha') { Write-Host '  Ensuite, l''accès aux dossiers se récupère avec la FEUILLE DE SECOURS imprimée : l''avoir sous la main.' -ForegroundColor Yellow }
+      if ((Read-Host 'Tapez OUI pour continuer') -ne 'OUI') { exit }
+      & $node --no-warnings $tool reinitialiser $who
+    } else {
+      $name = Read-Host 'Nouveau nom affiché'
+      if ($name) { & $node --no-warnings $tool renommer $who $name }
+    }
     Pause-End
   }
   'desinstaller' {
