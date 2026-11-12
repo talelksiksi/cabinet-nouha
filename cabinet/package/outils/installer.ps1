@@ -2,13 +2,17 @@
 #  Espace cabinet Dr Nouha Ksiksi — installation / mise à jour
 #  Lancé par INSTALLER.cmd (droits administrateur). Rien à télécharger : tout est dans ce dossier.
 #  Programme : C:\EspaceCabinet\app   Données : C:\EspaceCabinet\data (jamais effacées par une mise à jour)
+#  -Portable : ordinateur portable du Dr Nouha (copie synchronisée, accessible uniquement sur le portable lui-même)
 # ═══════════════════════════════════════════
+param([switch]$Portable)
 $ErrorActionPreference = 'Stop'
 $Host.UI.RawUI.WindowTitle = 'Espace cabinet - installation'
 $Src  = Split-Path -Parent $PSScriptRoot
 $Dest = 'C:\EspaceCabinet'
 $Task = 'Espace cabinet Nouha'
 $Name = 'cabinet-nouha.local'
+$Port = 3475   # portable : http://localhost:3475
+$Icon = "$Dest\app\public\favicon.ico"
 
 function Etape($t) { Write-Host ''; Write-Host "▶ $t" -ForegroundColor Cyan }
 function Ok($t)    { Write-Host "  ✔ $t" -ForegroundColor Green }
@@ -17,7 +21,7 @@ function Stop-Install($t) { Write-Host ''; Write-Host "✖ $t" -ForegroundColor 
 
 Write-Host '══════════════════════════════════════════════' -ForegroundColor DarkCyan
 Write-Host '  Espace cabinet — Dr Nouha Ksiksi' -ForegroundColor White
-Write-Host '  Installation sur ce PC (serveur du cabinet)' -ForegroundColor Gray
+if ($Portable) { Write-Host '  Installation sur le PORTABLE du Dr Nouha' -ForegroundColor Gray } else { Write-Host '  Installation sur ce PC (serveur du cabinet)' -ForegroundColor Gray }
 Write-Host '══════════════════════════════════════════════' -ForegroundColor DarkCyan
 
 # ── Vérifications ──
@@ -30,13 +34,19 @@ if ($update) { Info 'Installation existante détectée : mise à jour (les donn�
 $existing = Get-ScheduledTask -TaskName $Task -ErrorAction SilentlyContinue
 if ($existing) { Stop-ScheduledTask -TaskName $Task -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
 Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$Dest\*" } | Stop-Process -Force -ErrorAction SilentlyContinue
-foreach ($port in 443, 80) {
+$ports = if ($Portable) { @($Port) } else { @(443, 80) }
+foreach ($port in $ports) {
   $c = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
   if ($c) {
     $p = Get-Process -Id $c.OwningProcess -ErrorAction SilentlyContinue
-    if ($port -eq 443) { Stop-Install "Le port 443 est déjà utilisé par « $($p.ProcessName) ». Fermez ce programme (ou choisissez un autre PC) puis relancez." }
+    if ($port -ne 80) { Stop-Install "Le port $port est déjà utilisé par « $($p.ProcessName) ». Fermez ce programme puis relancez." }
     else { Info "Remarque : le port 80 est utilisé par « $($p.ProcessName) » : la page d'installation du certificat ne sera pas disponible en http." }
   }
+}
+$cfgFile = "$Dest\data\config.json"
+if ($update -and (Test-Path $cfgFile)) {
+  $wasPortable = (Get-Content $cfgFile -Raw | ConvertFrom-Json).role -eq 'nomade'
+  if ($wasPortable -ne [bool]$Portable) { Stop-Install "Ce PC est déjà installé comme $(if ($wasPortable) { 'PORTABLE (utilisez INSTALLER-PORTABLE.cmd)' } else { 'PC DU CABINET (utilisez INSTALLER.cmd)' })." }
 }
 Ok 'PC compatible'
 
@@ -50,6 +60,7 @@ foreach ($d in 'app', 'node', 'outils') {
 Copy-Item -Force "$Src\*.cmd", "$Src\*.html", "$Src\*.txt" $Dest -ErrorAction SilentlyContinue
 # Données : accès réservé aux administrateurs du PC et au service
 icacls "$Dest\data" /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
+if ($Portable) { Set-Content -Path $cfgFile -Value ('{ "role": "nomade", "plainPort": ' + $Port + ' }') -Encoding ASCII }
 Ok 'Programme copié ; dossier des données protégé'
 
 # ── Démarrage automatique (tâche planifiée, même sans session ouverte) ──
@@ -61,45 +72,58 @@ $settings  = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGo
 Register-ScheduledTask -TaskName $Task -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Serveur local de l''Espace cabinet (réseau du cabinet uniquement)' -Force | Out-Null
 Ok 'Le serveur démarrera tout seul à chaque allumage du PC'
 
-# ── Pare-feu : réseau local uniquement ──
-Etape 'Pare-feu (réseau du cabinet uniquement)'
 Get-NetFirewallRule -DisplayName 'Espace cabinet*' -ErrorAction SilentlyContinue | Remove-NetFirewallRule
-New-NetFirewallRule -DisplayName 'Espace cabinet (web)' -Direction Inbound -Action Allow -Program "$Dest\node\node.exe" -Protocol TCP -LocalPort 80, 443 -RemoteAddress LocalSubnet -Profile Any | Out-Null
-New-NetFirewallRule -DisplayName 'Espace cabinet (nom réseau)' -Direction Inbound -Action Allow -Program "$Dest\node\node.exe" -Protocol UDP -LocalPort 5353 -RemoteAddress LocalSubnet -Profile Any | Out-Null
-Ok 'Ouvert uniquement aux appareils du réseau local'
+if ($Portable) {
+  # ── Portable : rien d'ouvert vers l'extérieur ; seule la réponse « où est le PC du cabinet ? » est acceptée ──
+  Etape 'Pare-feu (portable : aucune ouverture, sauf la recherche du PC du cabinet)'
+  New-NetFirewallRule -DisplayName 'Espace cabinet (recherche du cabinet)' -Direction Inbound -Action Allow -Program "$Dest\node\node.exe" -Protocol UDP -LocalPort 5353 -RemoteAddress LocalSubnet -Profile Any | Out-Null
+  Ok 'L''application n''est accessible que sur ce portable'
+} else {
+  # ── Pare-feu : réseau local uniquement ──
+  Etape 'Pare-feu (réseau du cabinet uniquement)'
+  New-NetFirewallRule -DisplayName 'Espace cabinet (web)' -Direction Inbound -Action Allow -Program "$Dest\node\node.exe" -Protocol TCP -LocalPort 80, 443 -RemoteAddress LocalSubnet -Profile Any | Out-Null
+  New-NetFirewallRule -DisplayName 'Espace cabinet (nom réseau)' -Direction Inbound -Action Allow -Program "$Dest\node\node.exe" -Protocol UDP -LocalPort 5353 -RemoteAddress LocalSubnet -Profile Any | Out-Null
+  Ok 'Ouvert uniquement aux appareils du réseau local'
 
-# ── Le PC ne se met pas en veille ; mises à jour Windows hors des heures d'ouverture ──
-Etape 'Alimentation et mises à jour Windows'
-powercfg /change standby-timeout-ac 0 | Out-Null
-powercfg /change hibernate-timeout-ac 0 | Out-Null
-$wu = 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings'
-if (-not (Test-Path $wu)) { New-Item -Path $wu -Force | Out-Null }
-Set-ItemProperty -Path $wu -Name ActiveHoursStart -Value 7 -Type DWord
-Set-ItemProperty -Path $wu -Name ActiveHoursEnd -Value 19 -Type DWord
-Ok 'Pas de mise en veille sur secteur ; pas de redémarrage Windows entre 7 h et 19 h'
+  # ── Le PC ne se met pas en veille ; mises à jour Windows hors des heures d'ouverture ──
+  Etape 'Alimentation et mises à jour Windows'
+  powercfg /change standby-timeout-ac 0 | Out-Null
+  powercfg /change hibernate-timeout-ac 0 | Out-Null
+  $wu = 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings'
+  if (-not (Test-Path $wu)) { New-Item -Path $wu -Force | Out-Null }
+  Set-ItemProperty -Path $wu -Name ActiveHoursStart -Value 7 -Type DWord
+  Set-ItemProperty -Path $wu -Name ActiveHoursEnd -Value 19 -Type DWord
+  Ok 'Pas de mise en veille sur secteur ; pas de redémarrage Windows entre 7 h et 19 h'
 
-# ── Nom cabinet-nouha.local sur ce PC lui-même ──
-$hosts = "$env:SystemRoot\System32\drivers\etc\hosts"
-if (-not (Select-String -Path $hosts -Pattern $Name -Quiet)) { Add-Content -Path $hosts -Value "`r`n127.0.0.1 $Name   # Espace cabinet" -Encoding ASCII }
+  # ── Nom cabinet-nouha.local sur ce PC lui-même ──
+  $hosts = "$env:SystemRoot\System32\drivers\etc\hosts"
+  if (-not (Select-String -Path $hosts -Pattern $Name -Quiet)) { Add-Content -Path $hosts -Value "`r`n127.0.0.1 $Name   # Espace cabinet" -Encoding ASCII }
+}
 
 # ── Lancement ──
 Etape 'Démarrage du serveur'
 Start-ScheduledTask -TaskName $Task
+$listen = if ($Portable) { $Port } else { 443 }
 $ca = "$Dest\data\tls\ca.crt"
 for ($i = 0; $i -lt 60; $i++) {
-  if ((Test-Path $ca) -and (Get-NetTCPConnection -State Listen -LocalPort 443 -ErrorAction SilentlyContinue)) { break }
+  if ((Get-NetTCPConnection -State Listen -LocalPort $listen -ErrorAction SilentlyContinue) -and ($Portable -or (Test-Path $ca))) { break }
   Start-Sleep -Milliseconds 500
 }
-if (-not (Get-NetTCPConnection -State Listen -LocalPort 443 -ErrorAction SilentlyContinue)) { Stop-Install "Le serveur n'a pas démarré. Voir le journal : $Dest\data\serveur.log" }
+if (-not (Get-NetTCPConnection -State Listen -LocalPort $listen -ErrorAction SilentlyContinue)) { Stop-Install "Le serveur n'a pas démarré. Voir le journal : $Dest\data\serveur.log" }
 Ok 'Serveur en marche'
 
-# ── Certificat du cabinet approuvé sur ce PC ──
-Import-Certificate -FilePath $ca -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
-Ok 'Connexion sécurisée approuvée sur ce PC'
+if (-not $Portable) {
+  # ── Certificat du cabinet approuvé sur ce PC ──
+  Import-Certificate -FilePath $ca -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
+  Ok 'Connexion sécurisée approuvée sur ce PC'
+}
 
-# ── Raccourci sur le bureau de tous les utilisateurs ──
-Set-Content -Path "$env:PUBLIC\Desktop\Espace cabinet.url" -Value "[InternetShortcut]`r`nURL=https://$Name/`r`nIconIndex=0" -Encoding ASCII
-Ok 'Raccourci « Espace cabinet » sur le bureau'
+# ── Raccourci sur le bureau de tous les utilisateurs, avec l'icône du cabinet ──
+$lnkName = if ($Portable) { 'Espace cabinet (portable)' } else { 'Espace cabinet' }
+$url = if ($Portable) { "http://localhost:$Port/" } else { "https://$Name/" }
+Remove-Item "$env:PUBLIC\Desktop\Espace cabinet*.url" -ErrorAction SilentlyContinue
+Set-Content -Path "$env:PUBLIC\Desktop\$lnkName.url" -Value "[InternetShortcut]`r`nURL=$url`r`nIconFile=$Icon`r`nIconIndex=0" -Encoding ASCII
+Ok "Raccourci « $lnkName » sur le bureau"
 
 # ── Fin ──
 $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' -and $_.PrefixOrigin -ne 'WellKnown' } | Select-Object -First 1).IPAddress
@@ -107,6 +131,19 @@ Write-Host ''
 Write-Host '══════════════════════════════════════════════' -ForegroundColor DarkCyan
 Write-Host '  Installation terminée' -ForegroundColor Green
 Write-Host '══════════════════════════════════════════════' -ForegroundColor DarkCyan
+if ($Portable) {
+  Write-Host "  Adresse sur ce portable : http://localhost:$Port"
+  if (-not $update) {
+    Write-Host ''
+    Write-Host '  À FAIRE MAINTENANT, AU CABINET (portable sur le Wi-Fi du cabinet) :' -ForegroundColor Yellow
+    Write-Host '  1. Sur le PC du cabinet : Sauvegardes & système → « Associer un portable » → un code s''affiche.'
+    Write-Host '  2. Sur la page qui s''ouvre ici : saisir ce code. Les dossiers sont copiés sur le portable.'
+  }
+  Write-Host ''
+  Start-Process $url
+  Read-Host 'Appuyez sur Entrée pour fermer'
+  exit 0
+}
 Write-Host "  Adresse :            https://$Name"
 Write-Host "  Adresse IP du PC :   $ip   (à réserver dans la box, voir le guide)"
 Write-Host "  Autres appareils :   ouvrir http://$Name/certificat (une fois par appareil)"

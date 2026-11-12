@@ -118,7 +118,7 @@ const App = {
     const h = new Date().getHours();
     document.getElementById('greeting-time').textContent = h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';
     // Menu : uniquement les pages autorisées pour ce compte
-    document.querySelectorAll('.nav-item[data-page]').forEach(n=>n.classList.toggle('hidden', !Secure.canPage(n.dataset.page)));
+    document.querySelectorAll('.nav-item[data-page]').forEach(n=>n.classList.toggle('hidden', !Secure.canPage(n.dataset.page) || (n.dataset.page==='conflicts' && !Secure.status?.conflicts)));
     document.querySelectorAll('.nav-section-label').forEach(l=>{
       let n=l.nextElementSibling, any=false;
       while (n && !n.classList.contains('nav-section-label')) { if (n.classList.contains('nav-item') && !n.classList.contains('hidden')) any=true; n=n.nextElementSibling; }
@@ -246,7 +246,7 @@ const App = {
       'dental-chart':'Schéma dentaire', payments:'Paiements & Factures',
       reports:'Rapports & Analyses', staff:'Personnel',
       settings:'Paramètres', 'patient-detail':'Fiche patient', ...Plus.pages,
-      users:'Utilisateurs', journal:'Journal d\'activité', system:'Sauvegardes & système', account:'Mon compte'
+      users:'Utilisateurs', journal:'Journal d\'activité', system:'Sauvegardes & système', account:'Mon compte', conflicts:'Conflits à trancher'
     };
     document.getElementById('topbar-title').textContent = titles[page]||page;
 
@@ -257,7 +257,7 @@ const App = {
     if (page==='payments')     Payments.render();
     if (page==='reports')      Reports.render();
     if (page==='settings')     Settings.render();
-    if (['users','journal','system','account'].includes(page)) Admin.render(page);
+    if (['users','journal','system','account','conflicts'].includes(page)) Admin.render(page);
     Plus.onNavigate(page);
   },
 
@@ -1074,7 +1074,7 @@ const Files = {
 ══════════════════════════════════════════ */
 const Payments = {
   _nextInv: null,
-  _prefetchInv() { if (!Secure.can('billing','edit')) return; Secure.nextSeq('invoice').then(r=>{ this._nextInv=`FAC-${r.year}-${String(r.n).padStart(4,'0')}`; }).catch(()=>{}); },
+  _prefetchInv() { if (!Secure.can('billing','edit')) return; Secure.nextSeq('invoice').then(r=>{ this._nextInv=r.label || `FAC-${r.year}-${String(r.n).padStart(4,'0')}`; }).catch(()=>{}); },
   render() {
     const pays=DB.payments();
     const ps=document.getElementById('pay-patient-id');

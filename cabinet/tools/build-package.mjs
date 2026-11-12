@@ -43,12 +43,17 @@ for (const f of fs.readdirSync(path.join(PKG, 'outils'))) {
   const txt = fs.readFileSync(path.join(PKG, 'outils', f), 'utf8').replace(/^\uFEFF/, '').replace(/\r?\n/g, '\r\n');
   fs.writeFileSync(path.join(OUT, 'outils', f), '\uFEFF' + txt);
 }
-for (const f of fs.readdirSync(PKG).filter(f => /\.(cmd|html)$/.test(f))) fs.copyFileSync(path.join(PKG, f), path.join(OUT, f));
+for (const f of fs.readdirSync(PKG).filter(f => /\.(cmd|html)$/.test(f))) {
+  // fins de ligne Windows pour cmd.exe
+  if (f.endsWith('.cmd')) fs.writeFileSync(path.join(OUT, f), fs.readFileSync(path.join(PKG, f), 'utf8').replace(/\r?\n/g, '\r\n'));
+  else fs.copyFileSync(path.join(PKG, f), path.join(OUT, f));
+}
 fs.writeFileSync(path.join(OUT, 'LISEZMOI.txt'), [
   `Espace cabinet - Dr Nouha Ksiksi - version ${VERSION}`, '',
   '1. Extraire tout le ZIP (clic droit > Extraire tout).',
   '2. Sur le PC de l\'assistante : double-cliquer sur INSTALLER.cmd et accepter la demande de Windows.',
-  '3. Suivre GUIDE-INSTALLATION.html (premiere mise en service, autres appareils, sauvegardes).', '',
+  '3. Suivre GUIDE-INSTALLATION.html (premiere mise en service, autres appareils, sauvegardes).',
+  '4. Sur le portable du Dr Nouha : INSTALLER-PORTABLE.cmd, puis associer au cabinet (guide, section 5 bis).', '',
   'Rien a telecharger : Node.js ' + nodeVersion + ' et toutes les dependances sont inclus.',
 ].join('\r\n'));
 

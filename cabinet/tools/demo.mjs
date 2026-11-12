@@ -15,11 +15,11 @@ import { buildDataset } from './demo-data.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
-const PORT = +arg('--port', 3475), KEEP = process.argv.includes('--keep'), OPEN = !process.argv.includes('--no-open');
-const DATA = path.join(ROOT, 'data-demo');
+const PORT = +arg('--port', 3475), KEEP = process.argv.includes('--keep'), OPEN = !process.argv.includes('--no-open'), PORTABLE = !process.argv.includes('--sans-portable');
+const DATA = path.join(ROOT, 'data-demo'), DATA_P = path.join(ROOT, 'data-demo-portable'), PORT_P = PORT + 1;
 const BASE = `http://localhost:${PORT}`;
 
-if (!KEEP) fs.rmSync(DATA, { recursive: true, force: true });
+if (!KEEP) { fs.rmSync(DATA, { recursive: true, force: true }); fs.rmSync(DATA_P, { recursive: true, force: true }); }
 const fresh = !fs.existsSync(path.join(DATA, 'cabinet.db'));
 const srv = spawn(process.execPath, ['--no-warnings', path.join(ROOT, 'server', 'index.mjs')], {
   cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'],
@@ -28,7 +28,8 @@ const srv = spawn(process.execPath, ['--no-warnings', path.join(ROOT, 'server', 
 let log = '';
 srv.stdout.on('data', d => { log += d; process.stdout.write(String(d).replace(/code d'installation : \S+/, 'code d\'installation : (démo)')); });
 srv.stderr.on('data', d => process.stderr.write(d));
-const stop = () => { srv.kill(); process.exit(0); };
+let srvP = null;
+const stop = () => { srv.kill(); srvP?.kill(); process.exit(0); };
 process.on('SIGINT', stop); process.on('SIGTERM', stop);
 srv.on('exit', c => { console.log('Serveur arrêté', c ?? ''); process.exit(c || 0); });
 
@@ -105,6 +106,26 @@ async function seed() {
   return count;
 }
 
+/* Portable de démonstration : même programme en mode « nomade », associé au cabinet de démonstration */
+async function startPortable() {
+  const fresh = !fs.existsSync(path.join(DATA_P, 'portable.json'));
+  srvP = spawn(process.execPath, ['--no-warnings', path.join(ROOT, 'server', 'index.mjs')], {
+    cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'],
+    env: { ...process.env, CABINET_DATA: DATA_P, CABINET_ROLE: 'nomade', CABINET_PLAIN_PORT: String(PORT_P), CABINET_OFFICE_URL: BASE, CABINET_DEMO: '1' },
+  });
+  let plog = ''; srvP.stdout.on('data', d => { plog += d; }); srvP.stderr.on('data', d => process.stderr.write(d));
+  for (let i = 0; i < 80 && !plog.includes('portable'); i++) await new Promise(r => setTimeout(r, 250));
+  if (!fresh) return;
+  const line = fs.readFileSync(path.join(DATA, 'COMPTES-DEMO.txt'), 'utf8').split(/\r?\n/).find(l => l.startsWith('nouha '));
+  const pwNouha = line.trim().split(/\s+/)[1];
+  const n = client(), p = await n('POST', '/api/login/params', { username: 'nouha' });
+  const k = await C.deriveKeys(pwNouha, p.kdfSalt, p.kdfIter);
+  await n('POST', '/api/login', { username: 'nouha', authKey: k.authKey });
+  const { code } = await n('POST', '/api/sync/pairing-code');
+  const r = await fetch(`http://localhost:${PORT_P}/api/portable/pair`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Cabinet': '1' }, body: JSON.stringify({ code, name: 'Portable du Dr Nouha (démo)' }) }).then(r => r.json());
+  console.log(r.ok ? `Portable de démonstration associé et synchronisé (${r.sync?.received ?? 0} dossiers copiés).` : `Association du portable de démo : ${r.message || 'échec'}`);
+}
+
 (async () => {
   for (let i = 0; i < 80 && !log.includes('Sur ce PC'); i++) await new Promise(r => setTimeout(r, 250));
   if (!log.includes('Sur ce PC')) { console.error('Le serveur de démonstration n\'a pas démarré.'); return stop(); }
@@ -113,6 +134,7 @@ async function seed() {
     const t0 = Date.now(), n = await seed();
     console.log(`${n} enregistrements chiffrés en ${((Date.now() - t0) / 1000).toFixed(1)} s.`);
   }
-  console.log(`\n  ➜ Ouvrez ${BASE}\n  ➜ Identifiants : ${path.join(DATA, 'COMPTES-DEMO.txt')}\n  (Ctrl+C pour arrêter)\n`);
+  if (PORTABLE) await startPortable();
+  console.log(`\n  ➜ Cabinet : ${BASE}${PORTABLE ? `\n  ➜ Portable du Dr Nouha : http://localhost:${PORT_P}  (Dr Nouha et administrateur uniquement)` : ''}\n  ➜ Identifiants : ${path.join(DATA, 'COMPTES-DEMO.txt')}\n  (Ctrl+C pour arrêter)\n`);
   if (OPEN) exec(process.platform === 'win32' ? `start "" "${BASE}"` : `xdg-open ${BASE}`);
 })().catch(e => { console.error(e); stop(); });

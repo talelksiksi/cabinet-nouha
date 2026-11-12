@@ -26,7 +26,15 @@ export function loadConfig(overrides = {}) {
     fs.writeFileSync(secretsFile, JSON.stringify(secrets, null, 2), { mode: 0o600 });
   }
 
+  // Rôle de ce PC : « cabinet » (référence) ou « nomade » (portable du Dr Nouha), écrit par l'installation
+  const confFile = path.join(dataDir, 'config.json');
+  const local = fs.existsSync(confFile) ? JSON.parse(fs.readFileSync(confFile, 'utf8')) : {};
+
   return {
+    role: process.env.CABINET_ROLE || local.role || 'cabinet',
+    plainPort: +(process.env.CABINET_PLAIN_PORT || local.plainPort || 0) || null,
+    // démonstration / essais : adresse directe du PC du cabinet (sinon il est trouvé sur le Wi-Fi par son nom)
+    officeUrl: process.env.CABINET_OFFICE_URL || local.officeUrl || null,
     dataDir,
     dbFile: path.join(dataDir, 'cabinet.db'),
     backupDir: path.join(dataDir, 'backups'),

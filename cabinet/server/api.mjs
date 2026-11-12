@@ -7,6 +7,7 @@
 import crypto from 'node:crypto';
 import { tx } from './db.mjs';
 import { canAccess, sanitizePerms, COLLECTIONS } from '../public/js/secure/perms.mjs';
+import { createSync } from './sync.mjs';
 
 const KDF_ITER_MIN = 600000;
 const PASSWORD_MAX_AGE = 180 * 86400e3;          // renouvellement demandé tous les 6 mois
@@ -29,10 +30,11 @@ const isText = (s, min, max) => typeof s === 'string' && s.trim().length >= min 
 const USERNAME = /^[a-z0-9][a-z0-9._-]{2,31}$/;
 
 export function createApi({ db, cfg, backup, log = () => {} }) {
-  const { pepper, setupToken } = cfg.secrets;
-  const authHash = (userId, authKey) => sha256(`${pepper}|auth|${userId}|${authKey}`);
-  const inviteHash = (userId, inviteAuth) => sha256(`${pepper}|invite|${userId}|${inviteAuth}`);
-  const fakeSalt = username => crypto.createHash('sha256').update(`${pepper}|salt|${String(username).toLowerCase()}`).digest().subarray(0, 16).toString('base64');
+  const { setupToken } = cfg.secrets;
+  const isNomad = cfg.role === 'nomade';
+  const authHash = (userId, authKey) => sha256(`${cfg.secrets.pepper}|auth|${userId}|${authKey}`);
+  const inviteHash = (userId, inviteAuth) => sha256(`${cfg.secrets.pepper}|invite|${userId}|${inviteAuth}`);
+  const fakeSalt = username => crypto.createHash('sha256').update(`${cfg.secrets.pepper}|salt|${String(username).toLowerCase()}`).digest().subarray(0, 16).toString('base64');
 
   const q = (sql, ...a) => db.prepare(sql).get(...a);
   const qa = (sql, ...a) => db.prepare(sql).all(...a);
@@ -55,8 +57,8 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
 
   /* ── Journal ── */
   function audit(ctx, action, target = null, detail = null) {
-    run('INSERT INTO audit (ts, user_id, username, action, target, detail, ip) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      Date.now(), ctx.user?.id || null, ctx.user?.username || ctx.username || null, action, target, detail ? JSON.stringify(detail) : null, ctx.ip);
+    run('INSERT INTO audit (ts, user_id, username, action, target, detail, ip, origin) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      Date.now(), ctx.user?.id || null, ctx.user?.username || ctx.username || null, action, target, detail ? JSON.stringify(detail) : null, ctx.ip, ctx.origin || (isNomad ? 'portable' : null));
   }
 
   /* ── Sessions ── */
@@ -67,7 +69,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     ctx.setCookie(token);
   }
   function loadSession(ctx) {
-    const token = (ctx.cookies.cabinet_sid || '');
+    const token = (ctx.cookies[ctx.cookieName || 'cabinet_sid'] || '');
     if (!token) return;
     const s = q('SELECT * FROM sessions WHERE token_hash = ?', sha256(token));
     const now = Date.now();
@@ -116,7 +118,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
   /* État général (écran de connexion) */
   route('GET', '/api/status', ctx => {
     const n = q('SELECT COUNT(*) n FROM users').n;
-    return { setupNeeded: n === 0, dataKeyReady: !!q(`SELECT 1 FROM meta WHERE key = 'recovery_dek'`), serverTime: Date.now(), demo: !!cfg.demo };
+    return { setupNeeded: n === 0 && !isNomad, dataKeyReady: !!q(`SELECT 1 FROM meta WHERE key = 'recovery_dek'`), serverTime: Date.now(), demo: !!cfg.demo, ...sync.status() };
   });
 
   /* Installation : création du super-admin avec le code affiché par le serveur au premier démarrage */
@@ -153,6 +155,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     const generic = () => { recordFailure(ctx.ip); fail(401, 'bad_credentials', 'Identifiant ou mot de passe incorrect.'); };
     if (!u || !u.auth_hash || !isB64(b.authKey, 40, 64)) { audit(ctx, 'connexion_refusee', null, { raison: 'inconnu' }); generic(); }
     if (u.status === 'disabled') { audit(ctx, 'connexion_refusee', u.id, { raison: 'desactive' }); fail(403, 'disabled', 'Ce compte est désactivé. Contactez l\'administrateur.'); }
+    if (isNomad && !['admin', 'superadmin'].includes(u.kind)) { audit(ctx, 'connexion_refusee', u.id, { raison: 'portable' }); fail(403, 'nomad', 'Ce portable est réservé au Dr Nouha et à l\'administrateur informatique.'); }
     if (u.locked_until > now) fail(423, 'locked', `Compte bloqué après plusieurs erreurs. Réessayez dans ${Math.ceil((u.locked_until - now) / 60e3)} min.`);
     if (!sameSecret(authHash(u.id, b.authKey), u.auth_hash)) {
       const n = u.failed_logins + 1;
@@ -170,7 +173,8 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     const k = q('SELECT wrapped_dek FROM user_keys WHERE user_id = ?', u.id);
     return { user: profile(u), privKeyEnc: u.priv_key_enc, pubKey: u.pub_key, wrappedDek: k?.wrapped_dek || null,
       kdfSalt: u.kdf_salt, kdfIter: u.kdf_iter,
-      mustChangePassword: !!u.password_changed_at && Date.now() - u.password_changed_at > PASSWORD_MAX_AGE,
+      // sur le portable (souvent hors du cabinet), le renouvellement se fait au cabinet : pas de blocage ici
+      mustChangePassword: !isNomad && !!u.password_changed_at && Date.now() - u.password_changed_at > PASSWORD_MAX_AGE,
       dataKeyReady: !!q(`SELECT 1 FROM meta WHERE key = 'recovery_dek'`) };
   }
   route('GET', '/api/me', ctx => session(needUser(ctx)));
@@ -413,7 +417,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     const max = rows.length ? rows[rows.length - 1].updated_at : since;
     return { records: out, cursor: max };
   });
-  let clock = 0;
+  let clock = q('SELECT COALESCE(MAX(updated_at), 0) m FROM records').m;
   const tick = () => (clock = Math.max(Date.now(), clock + 1));
   route('PUT', '/api/records/:c/:id', (ctx, b, p) => {
     const u = needActive(ctx);
@@ -430,9 +434,9 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     if (u.kind !== 'admin' && u.scope === 'own' && PATIENT_LINKED.has(c)) { owners = owners || []; if (!owners.includes(u.id)) owners.push(u.id); }
     const v = tick();
     tx(db, () => {
-      run(`INSERT INTO records (collection, id, iv, data, owners, deleted, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, 0, ?, ?)
-           ON CONFLICT (collection, id) DO UPDATE SET iv = excluded.iv, data = excluded.data, owners = excluded.owners, deleted = 0, updated_at = excluded.updated_at, updated_by = excluded.updated_by`,
-        c, id, b.iv, b.data, owners ? JSON.stringify(owners) : null, v, u.id);
+      run(`INSERT INTO records (collection, id, iv, data, owners, deleted, updated_at, updated_by, dirty) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
+           ON CONFLICT (collection, id) DO UPDATE SET iv = excluded.iv, data = excluded.data, owners = excluded.owners, deleted = 0, updated_at = excluded.updated_at, updated_by = excluded.updated_by, dirty = excluded.dirty`,
+        c, id, b.iv, b.data, owners ? JSON.stringify(owners) : null, v, u.id, isNomad ? 1 : 0);
       run('DELETE FROM blind_index WHERE collection = ? AND record_id = ?', c, id);
       if (c === 'patients' && b.blind && typeof b.blind === 'object')
         for (const f of ['phone']) if (b.blind[f] && isB64(b.blind[f], 20, 64)) run('INSERT INTO blind_index (collection, record_id, field, hash) VALUES (?, ?, ?, ?)', c, id, f, b.blind[f]);
@@ -449,7 +453,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     if (!visible(u, cur)) fail(403, 'forbidden', 'Ces données ne vous sont pas attribuées.');
     const v = tick();
     tx(db, () => {
-      run('UPDATE records SET iv = NULL, data = NULL, deleted = 1, updated_at = ?, updated_by = ? WHERE collection = ? AND id = ?', v, u.id, c, id);
+      run('UPDATE records SET iv = NULL, data = NULL, deleted = 1, updated_at = ?, updated_by = ?, dirty = ? WHERE collection = ? AND id = ?', v, u.id, isNomad ? 1 : 0, c, id);
       run('DELETE FROM blind_index WHERE collection = ? AND record_id = ?', c, id);
     });
     audit(ctx, 'donnee_supprimee', `${c}/${id}`);
@@ -472,10 +476,11 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     if (!['invoice', 'quote'].includes(p.name)) fail(400, 'bad_request', 'Séquence inconnue.');
     if (!canAccess(u, p.name === 'invoice' ? 'payments' : 'documents', null, true)) fail(403, 'forbidden', 'Non autorisé.');
     return tx(db, () => {
-      const key = `seq:${p.name}:${new Date().getFullYear()}`;
+      const year = new Date().getFullYear(), series = isNomad ? 'P' : '';
+      const key = `seq${series}:${p.name}:${year}`;
       const cur = +(q('SELECT value FROM meta WHERE key = ?', key)?.value || 0) + 1;
       run('INSERT INTO meta (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at', key, String(cur), Date.now());
-      return { n: cur, year: new Date().getFullYear() };
+      return { n: cur, year, label: `${p.name === 'invoice' ? 'FAC' : 'DEV'}-${year}-${series}${String(cur).padStart(series ? 3 : 4, '0')}` };
     });
   });
 
@@ -484,7 +489,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     needManager(ctx);
     const before = +(ctx.url.searchParams.get('before') || 0) || Number.MAX_SAFE_INTEGER;
     const limit = Math.min(500, +(ctx.url.searchParams.get('limit') || 200));
-    return { entries: qa('SELECT id, ts, user_id userId, username, action, target, detail, ip FROM audit WHERE id < ? ORDER BY id DESC LIMIT ?', before, limit)
+    return { entries: qa('SELECT id, ts, user_id userId, username, action, target, detail, ip, origin FROM audit WHERE id < ? ORDER BY id DESC LIMIT ?', before, limit)
       .map(e => ({ ...e, detail: e.detail ? JSON.parse(e.detail) : null, targetName: e.target && !e.target.includes('/') ? nameOf(e.target) : null })) };
   });
   route('GET', '/api/system', ctx => {
@@ -496,7 +501,8 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
       dataKeyReady: !!q(`SELECT 1 FROM meta WHERE key = 'recovery_dek'`),
       keyHolders: keyHolders().length,
       backup: backup ? backup.status() : null,
-      server: { started: cfg.startedAt, node: process.version, hostname: cfg.hostname },
+      server: { started: cfg.startedAt, node: process.version, hostname: cfg.hostname, role: isNomad ? 'nomade' : 'cabinet' },
+      sync: sync.status(),
     };
   });
   route('GET', '/api/backup/status', ctx => { needActive(ctx); return backup.status(); });
@@ -523,9 +529,16 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
     return r;
   });
 
+  /* ════════════ Synchronisation cabinet ⇄ portable ════════════ */
+  async function invoke(method, pathname, ctx, body) {
+    const r = routes.find(r => r.method === method && r.re.test(pathname)) || fail(404, 'not_found', 'Adresse inconnue.');
+    return r.fn(ctx, body || {}, pathname.match(r.re).groups || {});
+  }
+  const sync = createSync({ cfg, db, route, fail, q, qa, run, tx, needManager, needActive, needUser, audit, getUser, tick, log, invoke, recordFailure, COLLECTIONS });
+
   /* ════════════ Aiguillage ════════════ */
-  return async function handle(req, res, url, helpers) {
-    const ctx = { req, res, url, ip: helpers.ip, cookies: helpers.cookies, setCookie: helpers.setCookie, clearCookie: helpers.clearCookie };
+  async function handle(req, res, url, helpers) {
+    const ctx = { req, res, url, ip: helpers.ip, cookies: helpers.cookies, cookieName: helpers.cookieName, setCookie: helpers.setCookie, clearCookie: helpers.clearCookie };
     try {
       if (req.method !== 'GET') {
         // protection CSRF : en-tête obligatoire (impossible à envoyer depuis un autre site sans autorisation) + même origine
@@ -537,7 +550,10 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
       if (!r) fail(404, 'not_found', 'Adresse inconnue.');
       const body = ['POST', 'PUT', 'PATCH'].includes(req.method) ? await helpers.readJson(MAX_BODY) : {};
       loadSession(ctx);
-      const out = await r.fn(ctx, body || {}, url.pathname.match(r.re).groups || {});
+      if (isNomad && sync.officeOnly(url.pathname)) fail(403, 'office_only', 'Cette action se fait sur le PC du cabinet.');
+      const out = isNomad && req.method !== 'GET' && sync.forwardable(url.pathname)
+        ? await sync.forward(ctx, req.method, url.pathname, body || {})
+        : await r.fn(ctx, body || {}, url.pathname.match(r.re).groups || {});
       helpers.json(200, out);
     } catch (e) {
       if (e instanceof HttpError) return helpers.json(e.status, { error: e.code, message: e.message, ...(e.extra || {}) });
@@ -546,5 +562,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
       log('Erreur API', e);
       helpers.json(500, { error: 'server', message: 'Erreur du serveur. Elle a été enregistrée.' });
     }
-  };
+  }
+  handle.sync = sync;
+  return handle;
 }

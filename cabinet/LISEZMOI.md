@@ -19,6 +19,18 @@ Node.js 22.13 ou plus (SQLite intégré). Variables utiles : `CABINET_DATA` (dos
 Double-cliquer sur `LANCER-DEMO.cmd` (ou `node tools/demo.mjs`) : un cabinet fictif complet est recréé à chaque lancement
 (5 comptes, ~45 patients, agenda du jour, factures, labo…) puis s'ouvre sur <http://localhost:3475>.
 Identifiants de démonstration : `data-demo/COMPTES-DEMO.txt` (jamais dans Git).
+La démo lance aussi le portable du Dr Nouha sur <http://localhost:3476>, déjà associé au cabinet
+(seuls `nouha` et `talel` peuvent s'y connecter ; `--sans-portable` pour ne pas le lancer).
+
+## Portable du Dr Nouha (mode « nomade »)
+
+Même programme, installé avec `INSTALLER-PORTABLE.cmd` : il tourne seulement sur le portable (<http://localhost:3475>),
+n'accepte que le Dr Nouha (tous ses droits) et l'administrateur informatique (ses droits habituels, sans les dossiers).
+Association une seule fois : au cabinet, *Sauvegardes & système → Portables associés → Associer* donne un code de 15 min
+à saisir sur le portable. Ensuite, dès que les deux sont sur le Wi-Fi du cabinet, tout se synchronise (toutes les 60 s ou
+*Synchroniser maintenant*) : le cabinet reste la référence ; si la même donnée a changé des deux côtés, rien n'est écrasé et
+le Dr Nouha choisit la version à garder (*Conflits à trancher*). Les actions d'administration (comptes, accès) faites sur le
+portable sont transmises au cabinet ; le journal du portable y remonte aussi. Un portable perdu se retire depuis le cabinet.
 
 ## Paquet d'installation
 

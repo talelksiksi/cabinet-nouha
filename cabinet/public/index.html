@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="css/styles.css"/>
   <link rel="stylesheet" href="css/cabinet-plus.css"/>
   <link rel="stylesheet" href="css/secure.css"/>
+  <link rel="icon" href="favicon.ico"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
   <script src="vendor/chart.umd.min.js"></script>
 </head>
 <body>
@@ -107,6 +109,10 @@
         <i class="fa-solid fa-users-gear"></i><span>Utilisateurs</span>
         <span class="nav-badge pending hidden" id="nav-badge-users">0</span>
       </a>
+      <a class="nav-item hidden" data-page="conflicts">
+        <i class="fa-solid fa-code-compare"></i><span>Conflits à trancher</span>
+        <span class="nav-badge pending">0</span>
+      </a>
       <a class="nav-item" data-page="journal">
         <i class="fa-solid fa-clipboard-list"></i><span>Journal d'activité</span>
       </a>
@@ -144,6 +150,7 @@
         <div class="topbar-title" id="topbar-title">Tableau de bord</div>
       </div>
       <div class="topbar-right">
+        <button class="nomad-indicator hidden" id="nomad-indicator"></button>
         <span class="sync-indicator ok" id="sync-indicator" title="Synchronisé avec le serveur du cabinet"><i class="fa-solid fa-circle-check"></i></span>
         <div class="search-box">
           <i class="fa-solid fa-magnifying-glass"></i>
@@ -758,6 +765,7 @@
       <section id="page-journal" class="page"></section>
       <section id="page-system" class="page"></section>
       <section id="page-account" class="page"></section>
+      <section id="page-conflicts" class="page"></section>
 
       <!-- ══════ PARAMÈTRES ══════ -->
       <section id="page-settings" class="page">

@@ -82,11 +82,13 @@ export function createApp(cfg, { log = console.log } = {}) {
     const url = new URL(req.url, `https://${req.headers.host || cfg.hostname}`);
     if (url.pathname.startsWith('/api/')) {
       res.setHeader('Cache-Control', 'no-store');
+      // en http://localhost, un nom de cookie par port : le cabinet et le portable de démonstration ne se mélangent pas
+      const sid = req.socket.encrypted ? 'cabinet_sid' : `cabinet_sid_${req.socket.localPort}`;
       return api(req, res, url, {
-        ip, cookies: parseCookies(req.headers.cookie),
+        ip, cookies: parseCookies(req.headers.cookie), cookieName: sid,
         readJson: max => readJson(req, max),
-        setCookie: token => res.setHeader('Set-Cookie', `cabinet_sid=${token}; HttpOnly; SameSite=Strict; Path=/${req.socket.encrypted ? '; Secure' : ''}`),
-        clearCookie: () => res.setHeader('Set-Cookie', `cabinet_sid=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${req.socket.encrypted ? '; Secure' : ''}`),
+        setCookie: token => res.setHeader('Set-Cookie', `${sid}=${token}; HttpOnly; SameSite=Strict; Path=/${req.socket.encrypted ? '; Secure' : ''}`),
+        clearCookie: () => res.setHeader('Set-Cookie', `${sid}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${req.socket.encrypted ? '; Secure' : ''}`),
         json: (status, obj) => { if (res.headersSent) return; res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', ...SECURITY_HEADERS }); res.end(JSON.stringify(obj)); },
       });
     }
@@ -95,7 +97,7 @@ export function createApp(cfg, { log = console.log } = {}) {
     serveStatic(req, res, url);
   }
 
-  return { db, backup, handler, close: () => { backup.stop(); db.close(); } };
+  return { db, backup, handler, sync: api.sync, close: () => { backup.stop(); api.sync.stop(); db.close(); } };
 }
 
 /* Port 80 : uniquement la page d'installation du certificat ; tout le reste part en HTTPS. */
@@ -122,18 +124,31 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const line = `[${new Date().toLocaleString('fr-FR')}] ${msg}${err ? ' — ' + (err.stack || err) : ''}`;
     console.log(line); fs.appendFile(logFile, line + '\n', () => {});
   };
-  cfg.tls = ensureTls(cfg, log);
-  const app = createApp(cfg, { log });
-  https.createServer({ key: cfg.tls.key, cert: cfg.tls.cert, minVersion: 'TLSv1.2' }, app.handler)
-    .listen(cfg.httpsPort, '0.0.0.0', () => log(`Espace cabinet : https://${cfg.hostname}${cfg.httpsPort === 443 ? '' : ':' + cfg.httpsPort}/`));
-  http.createServer(plainHandler(cfg)).listen(cfg.httpPort, '0.0.0.0', () => log(`Installation du certificat : http://${cfg.hostname}${cfg.httpPort === 80 ? '' : ':' + cfg.httpPort}/certificat`))
-    .on('error', e => log('Port HTTP indisponible (page certificat)', e));
-  // Accès direct sur ce PC uniquement (http://localhost) : sert à la démonstration et au poste serveur lui-même
-  if (process.env.CABINET_PLAIN_PORT) http.createServer(app.handler).listen(+process.env.CABINET_PLAIN_PORT, '127.0.0.1', () => log(`Sur ce PC : http://localhost:${process.env.CABINET_PLAIN_PORT}/`));
-  const mdns = startMdns(cfg.hostname, log);
-  app.backup.start();
-  if (app.db.prepare('SELECT COUNT(*) n FROM users').get().n === 0)
-    log(`PREMIÈRE INSTALLATION — code d'installation : ${cfg.secrets.setupToken}  (à saisir sur https://${cfg.hostname}/installation.html)`);
-  const shutdown = () => { log('Arrêt du serveur'); mdns.stop(); app.close(); process.exit(0); };
+  let mdns = { stop() {} };
+  if (cfg.role === 'nomade') {
+    // ── Portable du Dr Nouha : uniquement sur ce portable (http://localhost), synchronisé avec le cabinet ──
+    const app = createApp(cfg, { log });
+    const port = cfg.plainPort || 3475;
+    http.createServer(app.handler).listen(port, '127.0.0.1', () => log(`Espace cabinet (portable) : http://localhost:${port}/`));
+    app.backup.start();
+    app.sync.start();
+    var close = () => app.close();
+  } else {
+    // ── PC du cabinet : https://cabinet-nouha.local pour tout le réseau du cabinet ──
+    cfg.tls = ensureTls(cfg, log);
+    const app = createApp(cfg, { log });
+    https.createServer({ key: cfg.tls.key, cert: cfg.tls.cert, minVersion: 'TLSv1.2' }, app.handler)
+      .listen(cfg.httpsPort, '0.0.0.0', () => log(`Espace cabinet : https://${cfg.hostname}${cfg.httpsPort === 443 ? '' : ':' + cfg.httpsPort}/`));
+    http.createServer(plainHandler(cfg)).listen(cfg.httpPort, '0.0.0.0', () => log(`Installation du certificat : http://${cfg.hostname}${cfg.httpPort === 80 ? '' : ':' + cfg.httpPort}/certificat`))
+      .on('error', e => log('Port HTTP indisponible (page certificat)', e));
+    // Accès direct sur ce PC uniquement (http://localhost) : démonstration et poste serveur lui-même
+    if (cfg.plainPort) http.createServer(app.handler).listen(cfg.plainPort, '127.0.0.1', () => log(`Sur ce PC : http://localhost:${cfg.plainPort}/`));
+    mdns = startMdns(cfg.hostname, log);
+    app.backup.start();
+    if (app.db.prepare('SELECT COUNT(*) n FROM users').get().n === 0)
+      log(`PREMIÈRE INSTALLATION — code d'installation : ${cfg.secrets.setupToken}  (à saisir sur https://${cfg.hostname}/)`);
+    var close = () => app.close();
+  }
+  const shutdown = () => { log('Arrêt du serveur'); mdns.stop(); close(); process.exit(0); };
   process.on('SIGINT', shutdown); process.on('SIGTERM', shutdown);
 }

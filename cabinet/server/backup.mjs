@@ -124,7 +124,7 @@ export function createBackup({ db, cfg, log = () => {}, now = () => new Date() }
       nextAuto: nextSlot(), slots: cfg.backupSlots.map(([h, m]) => `${pad(h)}:${pad(m)}`),
       usb: usb ? { ts: usb.ts, file: usb.file, drive: usb.detail } : null,
       // rappel dû : mardi 11 h passé, et pas de copie USB depuis (pas de rappel avant la première semaine d'utilisation)
-      usbDue: reminder > installed && (!usb || usb.ts < reminder),
+      usbDue: cfg.role !== 'nomade' && reminder > installed && (!usb || usb.ts < reminder),
       usbReminderSince: reminder,
       count: fs.readdirSync(cfg.backupDir).filter(f => f.endsWith('.cnbk')).length,
     };

@@ -14,6 +14,7 @@ const Admin = {
       if (page === 'journal') return await this.renderJournal();
       if (page === 'system') return await this.renderSystem();
       if (page === 'account') return this.renderAccount();
+      if (page === 'conflicts') return await this.renderConflicts();
     } catch (e) { App.toast(e.message, 'error'); }
   },
   isManager: () => ['admin', 'superadmin'].includes(Secure.user?.kind),
@@ -36,7 +37,7 @@ const Admin = {
     };
     el.innerHTML = `
       <div class="page-header">
-        <div><h2>Utilisateurs</h2><p class="page-subtitle">Comptes du cabinet et niveaux d'accès. Les changements s'appliquent immédiatement côté serveur ; les nouveaux accès apparaissent à la prochaine connexion.</p></div>
+        <div><h2>Utilisateurs</h2><p class="page-subtitle">${Secure.isNomad ? 'Comptes gérés au cabinet : depuis ce portable, vos changements sont transmis au PC du cabinet (portable sur le Wi-Fi du cabinet).' : 'Comptes du cabinet et niveaux d\'accès. Les changements s\'appliquent immédiatement côté serveur ; les nouveaux accès apparaissent à la prochaine connexion.'}</p></div>
         <button class="btn-primary" onclick="Admin.editUser()"><i class="fa-solid fa-user-plus"></i> Nouveau compte</button>
       </div>
       ${pending.length ? `<div class="card pending-card"><div class="card-header"><h3><i class="fa-solid fa-key"></i> Accès aux dossiers à autoriser</h3></div><div class="card-body">
@@ -182,6 +183,7 @@ const Admin = {
     cle_donnees_recuperee: 'Accès retrouvé (clé de secours)', acces_donnees_autorise: 'Accès aux dossiers autorisé',
     donnee_creee: 'Création', donnee_modifiee: 'Modification', donnee_supprimee: 'Suppression',
     sauvegarde_usb: 'Copie sur clé USB', sauvegarde_manuelle: 'Sauvegarde manuelle', cle_sauvegarde_consultee: 'Clé de sauvegarde consultée',
+    portable_code_cree: 'Code d\'association de portable créé', portable_associe: 'Portable associé', portable_retire: 'Portable retiré', conflit_tranche: 'Conflit de synchronisation tranché',
   },
   COLL: { patients: 'patient', appointments: 'rendez-vous', treatments: 'soin', payments: 'facture', documents: 'document', chart: 'schéma dentaire',
     files: 'fichier', labworks: 'travail de laboratoire', labs: 'laboratoire', labpayments: 'règlement labo', tasks: 'tâche', expenses: 'dépense',
@@ -202,7 +204,7 @@ const Admin = {
           const what = e.target && e.target.includes('/') ? (this.COLL[c] || c) : (e.targetName && e.targetName !== '—' ? e.targetName : '');
           const bad = /refusee|bloque/.test(e.action);
           return `<tr class="${bad ? 'row-late' : ''}"><td style="white-space:nowrap">${this.when(e.ts)}</td><td>${this.esc(e.username || '—')}</td>
-            <td>${bad ? '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i> ' : ''}${this.ACTIONS[e.action] || this.esc(e.action)}</td>
+            <td>${bad ? '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i> ' : ''}${this.ACTIONS[e.action] || this.esc(e.action)}${e.origin === 'portable' ? ' <span class="perm-chip own"><i class="fa-solid fa-laptop"></i> portable</span>' : ''}</td>
             <td class="text-muted" style="font-size:.82rem">${this.esc(what)}${e.detail?.raison ? ' · ' + this.esc(e.detail.raison.replace('_', ' ')) : ''}</td>
             <td class="text-muted" style="font-size:.78rem">${this.esc((e.ip || '').replace('::ffff:', ''))}</td></tr>`;
         }).join('') || '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:1.5rem">Rien pour l\'instant</td></tr>'}</tbody></table></div></div></div>`;
@@ -223,6 +225,7 @@ const Admin = {
         <div class="stat-card ${st.usbDue ? 'stat-orange' : 'stat-purple'}"><div class="stat-icon"><i class="fa-brands fa-usb"></i></div><div class="stat-info"><span class="stat-number">${st.usb ? this.ago(st.usb.ts) : 'jamais'}</span><span class="stat-label">Dernière copie sur clé USB${st.usbDue ? ' · <b>à faire</b>' : ''}</span></div></div>
         <div class="stat-card stat-blue"><div class="stat-icon"><i class="fa-solid fa-database"></i></div><div class="stat-info"><span class="stat-number">${st.count}</span><span class="stat-label">Sauvegardes conservées sur le PC</span></div></div>
       </div>
+      ${await this.nomadSection(sys)}
       ${st.lastFail ? `<div class="usb-banner"><i class="fa-solid fa-triangle-exclamation"></i><div><b>Dernière sauvegarde en échec</b><span>${this.esc(st.lastFail.detail || '')} (${this.when(st.lastFail.ts)})</span></div></div>` : ''}
       <div class="cash-grid">
         <div class="card"><div class="card-header"><h3><i class="fa-brands fa-usb"></i> Copie sur clé USB</h3></div><div class="card-body">
@@ -239,6 +242,82 @@ const Admin = {
         </div></div>
       </div>`;
   },
+  async nomadSection(sys) {
+    if (Secure.isNomad) {
+      const s = sys.sync, ago = s.office.lastSync ? this.ago(s.office.lastSync) : 'jamais';
+      return `<div class="card" style="margin-bottom:1rem"><div class="card-header"><h3><i class="fa-solid fa-laptop"></i> Portable du Dr Nouha — synchronisation avec le cabinet</h3>
+        <button class="btn-sm-primary" onclick="Admin.syncNow(this)"><i class="fa-solid fa-rotate"></i> Synchroniser maintenant</button></div><div class="card-body sys-list">
+        <div><span>Cabinet</span><b>${s.office.reachable ? '<span style="color:var(--success)">joignable</span>' : 'hors de portée (portable hors du cabinet)'}</b></div>
+        <div><span>Dernière synchronisation</span><b>${ago}</b></div>
+        <div><span>Modifications en attente d'envoi</span><b>${s.pending}</b></div>
+        <div><span>Conflits à trancher</span><b>${s.conflicts ? `<a class="link" onclick="App.navigate('conflicts')">${s.conflicts}</a>` : '0'}</b></div>
+        ${s.office.lastError && !s.office.reachable ? `<div><span>Dernier message</span><b style="font-weight:500">${this.esc(s.office.lastError)}</b></div>` : ''}
+        <p class="text-muted" style="font-size:.82rem;margin-top:.6rem">La synchronisation est automatique (chaque minute) dès que le portable est sur le Wi-Fi du cabinet avec le PC du cabinet allumé.</p></div></div>`;
+    }
+    let nodes = [];
+    try { nodes = (await Secure.api('GET', '/api/sync/nodes')).nodes; } catch {}
+    return `<div class="card" style="margin-bottom:1rem"><div class="card-header"><h3><i class="fa-solid fa-laptop"></i> Portables associés</h3>
+      <button class="btn-sm-primary" onclick="Admin.pairCode()"><i class="fa-solid fa-link"></i> Associer un portable</button></div><div class="card-body">
+      ${nodes.length ? nodes.map(n => `<div class="pending-row"><div><b>${this.esc(n.name)}</b> <span class="text-muted">· associé le ${new Date(n.createdAt).toLocaleDateString('fr-FR')} · dernière synchronisation : ${n.lastSeen ? this.ago(n.lastSeen) : 'jamais'}</span>${n.revoked ? ' <span class="badge badge-absent">retiré</span>' : ''}</div>
+        ${n.revoked ? '' : `<button class="btn-secondary btn-xs" onclick="Admin.revokeNode('${n.id}')"><i class="fa-solid fa-link-slash"></i> Retirer</button>`}</div>`).join('')
+        : '<p class="text-muted" style="font-size:.88rem">Aucun. Le portable du Dr Nouha, une fois associé, garde une copie complète et se synchronise dès qu\'il est sur le Wi-Fi du cabinet.</p>'}
+      </div></div>`;
+  },
+  async pairCode() {
+    try {
+      const r = await Secure.api('POST', '/api/sync/pairing-code');
+      Plus.modal('modal-pair', '<i class="fa-solid fa-link"></i> Associer un portable', `
+        <p>Sur le portable (installé avec <code>INSTALLER-PORTABLE.cmd</code> et branché sur le Wi-Fi du cabinet), ouvrez l'Espace cabinet et saisissez :</p>
+        <div class="invite-card"><div><span>Code d'association</span><b class="code">${this.esc(r.code)}</b></div><p>Valable 15 minutes, une seule fois.</p></div>`,
+        `<button class="btn-primary" onclick="App.closeModal('modal-pair');Admin.renderSystem()">Terminé</button>`);
+    } catch (e) { App.toast(e.message, 'error'); }
+  },
+  revokeNode(id) {
+    App.confirmDelete('Retirer ce portable ? Il ne pourra plus se synchroniser (perte, vol, remplacement). Il faudra l\'associer de nouveau pour le réutiliser.', async () => {
+      try { await Secure.api('POST', `/api/sync/nodes/${id}/revoke`); App.toast('Portable retiré', 'warning'); this.renderSystem(); } catch (e) { App.toast(e.message, 'error'); }
+    });
+  },
+  async syncNow(btn) {
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Synchronisation…';
+    const r = await Secure.api('POST', '/api/sync/now').catch(e => ({ ok: false, error: e.message }));
+    App.toast(r.ok ? `Synchronisé : ${r.sent} envoyée${r.sent > 1 ? 's' : ''}, ${r.received} reçue${r.received > 1 ? 's' : ''}` : r.error, r.ok ? 'success' : 'warning');
+    await Secure.refreshNomad(); App.refreshCurrent(); this.renderSystem();
+  },
+
+  /* ══════════ Conflits (portable) ══════════ */
+  FIELD: { firstName: 'Prénom', lastName: 'Nom', phone: 'Téléphone', email: 'E-mail', address: 'Adresse', dob: 'Naissance', allergies: 'Allergies', medications: 'Traitements',
+    conditions: 'Antécédents', notes: 'Notes', date: 'Date', time: 'Heure', status: 'Statut', service: 'Soin', procedure: 'Acte', cost: 'Coût', paidAmount: 'Versé',
+    description: 'Description', followup: 'Suivi', duration: 'Durée', title: 'Titre', label: 'Libellé', amount: 'Montant', dentistId: 'Dentiste', teeth: 'Dents' },
+  async renderConflicts() {
+    const el = document.getElementById('page-conflicts');
+    const { conflicts } = await Secure.api('GET', '/api/sync/conflicts');
+    const show = v => v == null || v === '' ? '<span class="text-muted">—</span>' : this.esc(typeof v === 'object' ? JSON.stringify(v) : v);
+    const cards = [];
+    for (const c of conflicts) {
+      const local = c.local.deleted ? null : await Secure.decrypt(c.c, c.id, c.local);
+      const office = c.office.deleted || !c.office.data ? null : await Secure.decrypt(c.c, c.id, c.office);
+      const ref = local || office || {};
+      const title = c.c === 'patients' ? `${ref.firstName || ''} ${ref.lastName || ''}` : `${this.COLL[c.c] || c.c}${ref.patientId ? ' · ' + Utils.patientName(ref.patientId) : ''}${ref.date ? ' · ' + Utils.formatDate(ref.date) : ''}`;
+      const keys = [...new Set([...Object.keys(local || {}), ...Object.keys(office || {})])].filter(k => k !== 'id' && JSON.stringify((local || {})[k]) !== JSON.stringify((office || {})[k]));
+      const rows = !local ? '<tr><td colspan="3"><b>Supprimé sur le portable</b>, modifié au cabinet.</td></tr>'
+        : !office ? '<tr><td colspan="3"><b>Supprimé au cabinet</b>, modifié sur le portable.</td></tr>'
+        : keys.map(k => `<tr><td>${this.FIELD[k] || this.esc(k)}</td><td>${show(local[k])}</td><td>${show(office[k])}</td></tr>`).join('');
+      cards.push(`<div class="card conflict-card"><div class="card-header"><h3><i class="fa-solid fa-code-compare"></i> ${this.esc(title.trim() || c.c)}</h3><span class="text-muted" style="font-size:.8rem">${this.esc(this.COLL[c.c] || c.c)}</span></div><div class="card-body">
+        <table class="data-table conflict-table"><thead><tr><th>Champ</th><th><i class="fa-solid fa-laptop"></i> Sur ce portable</th><th><i class="fa-solid fa-building"></i> Au cabinet</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="conflict-actions"><button class="btn-primary" onclick="Admin.resolve('${c.c}','${c.id}','local')"><i class="fa-solid fa-laptop"></i> Garder la version du portable</button>
+        <button class="btn-secondary" onclick="Admin.resolve('${c.c}','${c.id}','office')"><i class="fa-solid fa-building"></i> Garder la version du cabinet</button></div></div></div>`);
+    }
+    el.innerHTML = `<div class="page-header"><div><h2>Conflits à trancher</h2><p class="page-subtitle">Ces dossiers ont été modifiés à la fois sur ce portable et au cabinet. Rien n'a été écrasé : choisissez la bonne version.</p></div></div>
+      ${cards.join('') || '<div class="empty-state"><i class="fa-solid fa-circle-check"></i><h3>Aucun conflit</h3><p>Tout est synchronisé.</p></div>'}`;
+  },
+  async resolve(c, id, keep) {
+    try {
+      await Secure.api('POST', '/api/sync/resolve', { c, id, keep });
+      App.toast(keep === 'local' ? 'Version du portable gardée : envoyée au cabinet' : 'Version du cabinet gardée');
+      await Secure.refreshNomad(); this.renderConflicts(); App.refreshCurrent();
+    } catch (e) { App.toast(e.message, 'error'); }
+  },
+
   async backupNow() {
     try { const r = await Secure.api('POST', '/api/backup/now'); App.toast(`Sauvegarde faite (${Math.round(r.size / 1024)} Ko)`); this.renderSystem(); }
     catch (e) { App.toast(e.message, 'error'); }

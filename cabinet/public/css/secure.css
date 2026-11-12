@@ -64,6 +64,16 @@
 .drive-row { display: flex; align-items: center; gap: .5rem; padding: .6rem .8rem; border: 1px solid var(--border); border-radius: 10px; margin: .4rem 0; cursor: pointer; }
 .drive-row input { width: 17px; height: 17px; accent-color: var(--primary); }
 
+/* ── Portable ── */
+.nomad-indicator { display: inline-flex; align-items: center; gap: .4rem; border: 0; cursor: pointer; font: 600 .78rem var(--font-sans); padding: .35rem .7rem; border-radius: 20px; }
+.nomad-indicator.ok { background: var(--success-light); color: var(--success); }
+.nomad-indicator.away { background: #f1f5f9; color: #475569; }
+.nomad-indicator.warn { background: #fef3c7; color: #92400e; }
+.conflict-card { margin-bottom: 1rem; }
+.conflict-table td { font-size: .86rem; vertical-align: top; }
+.conflict-table td:first-child { font-weight: 600; white-space: nowrap; }
+.conflict-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; }
+
 @media (max-width: 640px) {
   .usb-banner, .access-banner { margin: .8rem .8rem 0; flex-wrap: wrap; }
   .perm-matrix { font-size: .78rem; }

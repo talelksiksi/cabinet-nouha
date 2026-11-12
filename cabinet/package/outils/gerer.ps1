@@ -8,7 +8,10 @@ $Dest = 'C:\EspaceCabinet'
 $Task = 'Espace cabinet Nouha'
 $Name = 'cabinet-nouha.local'
 function Pause-End { Write-Host ''; Read-Host 'Appuyez sur Entrée pour fermer' | Out-Null }
-function Running { [bool](Get-NetTCPConnection -State Listen -LocalPort 443 -ErrorAction SilentlyContinue | Where-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Path -like "$Dest\*" }) }
+$IsPortable = (Test-Path "$Dest\data\config.json") -and ((Get-Content "$Dest\data\config.json" -Raw | ConvertFrom-Json).role -eq 'nomade')
+$ListenPort = if ($IsPortable) { 3475 } else { 443 }
+$Url = if ($IsPortable) { 'http://localhost:3475' } else { "https://$Name" }
+function Running { [bool](Get-NetTCPConnection -State Listen -LocalPort $ListenPort -ErrorAction SilentlyContinue | Where-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Path -like "$Dest\*" }) }
 function Stop-Server {
   Stop-ScheduledTask -TaskName $Task -ErrorAction SilentlyContinue
   Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$Dest\*" } | Stop-Process -Force -ErrorAction SilentlyContinue
@@ -19,7 +22,7 @@ switch ($Action) {
   'demarrer' {
     Start-ScheduledTask -TaskName $Task
     for ($i = 0; $i -lt 30 -and -not (Running); $i++) { Start-Sleep -Milliseconds 500 }
-    if (Running) { Write-Host "✔ Serveur en marche : https://$Name" -ForegroundColor Green } else { Write-Host "✖ Le serveur n'a pas démarré : voir $Dest\data\serveur.log" -ForegroundColor Red }
+    if (Running) { Write-Host "✔ Serveur en marche : $Url" -ForegroundColor Green } else { Write-Host "✖ Le serveur n'a pas démarré : voir $Dest\data\serveur.log" -ForegroundColor Red }
     Pause-End
   }
   'arreter' {
@@ -33,7 +36,13 @@ switch ($Action) {
     Write-Host '══ Espace cabinet : état ══' -ForegroundColor Cyan
     Write-Host ("Serveur           : " + $(if (Running) { 'EN MARCHE' } else { 'ARRÊTÉ' }))
     Write-Host ("Démarrage auto    : " + $(if ($t) { 'oui (' + $t.State + ')' } else { 'NON INSTALLÉ' }))
-    Write-Host ("Adresse           : https://$Name")
+    Write-Host ("Type              : " + $(if ($IsPortable) { 'PORTABLE du Dr Nouha (synchronisé avec le cabinet)' } else { 'PC du cabinet (référence)' }))
+    Write-Host ("Adresse           : $Url")
+    if ($IsPortable -and (Test-Path "$Dest\data\portable.json")) {
+      $pj = Get-Content "$Dest\data\portable.json" -Raw | ConvertFrom-Json
+      $ls = if ($pj.lastSync) { ([DateTimeOffset]::FromUnixTimeMilliseconds([int64]$pj.lastSync)).LocalDateTime.ToString('dd/MM/yyyy HH:mm') } else { 'jamais' }
+      Write-Host ("Associé au cabinet: " + $(if ($pj.paired) { 'oui' } else { 'NON' }) + "   ·   dernière synchronisation : $ls")
+    }
     $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' -and $_.PrefixOrigin -ne 'WellKnown' } | Select-Object -First 1).IPAddress
     Write-Host ("Adresse IP du PC  : $ip")
     $b = Get-ChildItem "$Dest\data\backups\*.cnbk" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
@@ -72,7 +81,7 @@ switch ($Action) {
     $hosts = "$env:SystemRoot\System32\drivers\etc\hosts"
     (Get-Content $hosts) | Where-Object { $_ -notmatch [regex]::Escape($Name) } | Set-Content $hosts -Encoding ASCII
     Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Subject -like '*Cabinet Dr Nouha Ksiksi*' } | Remove-Item -ErrorAction SilentlyContinue
-    Remove-Item "$env:PUBLIC\Desktop\Espace cabinet.url" -ErrorAction SilentlyContinue
+    Remove-Item "$env:PUBLIC\Desktop\Espace cabinet*.url" -ErrorAction SilentlyContinue
     foreach ($d in 'app', 'node', 'outils') { Remove-Item -Recurse -Force "$Dest\$d" -ErrorAction SilentlyContinue }
     Get-ChildItem $Dest -File -ErrorAction SilentlyContinue | Remove-Item -Force
     if ($del -eq 'SUPPRIMER') { Remove-Item -Recurse -Force "$Dest\data"; Remove-Item -Force $Dest -ErrorAction SilentlyContinue; Write-Host '✔ Programme et données supprimés.' -ForegroundColor Green }

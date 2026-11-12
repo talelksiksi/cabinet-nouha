@@ -226,6 +226,7 @@ function canPage(page) {
   if (!S.user) return false;
   if (page === 'account') return true;
   if (MANAGER_PAGES.includes(page)) return ['admin', 'superadmin'].includes(S.user.kind);
+  if (page === 'conflicts') return S.status?.role === 'nomade' && S.user.kind !== 'superadmin';
   if (S.user.kind === 'superadmin') return false;
   if (page === 'dashboard') return true;
   const m = PAGE_MODULE[page];
@@ -304,8 +305,30 @@ function showSetup() {
 }
 const v = id => document.getElementById(id).value.trim();
 
+function showPairing(message) {
+  screen(card('Portable du Dr Nouha', 'Association avec le PC du cabinet', `
+    <form class="login-form" id="f-pair" autocomplete="off">
+      <p class="auth-note"><b>À faire une seule fois, au cabinet.</b> Le portable doit être sur le <b>Wi-Fi du cabinet</b>, le PC du cabinet allumé.
+      Sur le PC du cabinet : <b>Sauvegardes &amp; système → Associer un portable</b>, puis saisissez ici le code affiché.</p>
+      ${field('pr-code', 'Code d\'association', 'text', 'autocomplete="off" required placeholder="XXXXX-XXXXX"')}
+      ${field('pr-name', 'Nom de ce portable', 'text', 'value="Portable du Dr Nouha"')}
+      <p class="login-error ${message ? '' : 'hidden'}">${esc(message || '')}</p>
+      <button type="submit" class="btn-login">Associer et copier les dossiers <i class="fa-solid fa-link"></i></button>
+    </form>`));
+  document.getElementById('f-pair').addEventListener('submit', async e => {
+    e.preventDefault();
+    try {
+      busy(true, 'Association et copie des dossiers…');
+      const r = await api('POST', '/api/portable/pair', { code: v('pr-code'), name: v('pr-name') });
+      S.status = await api('GET', '/api/status');
+      showLogin(r.sync?.ok ? null : 'Associé. Première copie incomplète : elle reprendra automatiquement.');
+    } catch (x) { busy(false); err(x.message); }
+  });
+}
+
 function showLogin(message) {
-  screen(card('Espace cabinet', 'Dr Nouha Ksiksi · réseau du cabinet', `
+  const nomad = S.status?.role === 'nomade';
+  screen(card('Espace cabinet', nomad ? 'Portable du Dr Nouha · synchronisé avec le cabinet' : 'Dr Nouha Ksiksi · réseau du cabinet', `
     <form class="login-form" id="f-login" autocomplete="on">
       ${field('li-user', '<i class="fa-solid fa-user"></i> Identifiant', 'text', 'autocomplete="username" autocapitalize="none" required')}
       <div class="form-group"><label for="li-pw"><i class="fa-solid fa-lock"></i> Mot de passe</label>
@@ -313,11 +336,11 @@ function showLogin(message) {
         <button type="button" class="hint-btn" data-toggle="li-pw" title="Afficher"><i class="fa-solid fa-eye"></i></button></div></div>
       <p class="login-error ${message ? '' : 'hidden'}">${esc(message || '')}</p>
       <button type="submit" class="btn-login">Se connecter <i class="fa-solid fa-arrow-right"></i></button>
-      <button type="button" class="btn-link" id="go-invite"><i class="fa-solid fa-key"></i> Première connexion avec un code d'invitation</button>
+      ${nomad ? '' : '<button type="button" class="btn-link" id="go-invite"><i class="fa-solid fa-key"></i> Première connexion avec un code d\'invitation</button>'}
       ${S.status?.demo ? '<p class="login-hint"><i class="fa-solid fa-flask"></i> Démonstration : données fictives</p>' : '<p class="login-hint"><i class="fa-solid fa-shield-halved"></i> Données chiffrées · accessible uniquement au cabinet</p>'}
     </form>`));
   root().querySelector('[data-toggle="li-pw"]').addEventListener('click', () => { const p = document.getElementById('li-pw'); p.type = p.type === 'password' ? 'text' : 'password'; });
-  document.getElementById('go-invite').addEventListener('click', () => showInvite());
+  document.getElementById('go-invite')?.addEventListener('click', () => showInvite());
   document.getElementById('f-login').addEventListener('submit', async e => {
     e.preventDefault();
     try {
@@ -538,6 +561,7 @@ function enterApp() {
   }, POLL_MS);
   idleTimer = setInterval(() => { if (Date.now() - lastActivity > IDLE_LOCK_MS) lock('idle'); }, 20e3);
   refreshBackupBanner(); backupTimer = setInterval(refreshBackupBanner, 5 * 60e3);
+  if (S.status?.role === 'nomade') { refreshNomad(); clearInterval(nomadTimer); nomadTimer = setInterval(refreshNomad, 30e3); }
   if (S.user.kind === 'admin' && S.dek) autoGrant();
 }
 for (const ev of ['mousemove', 'keydown', 'click', 'touchstart', 'scroll']) addEventListener(ev, () => { lastActivity = Date.now(); }, { passive: true, capture: true });
@@ -547,7 +571,7 @@ function wipe() {
   for (const k of Object.keys(recs)) recs[k].clear();
   for (const k of Object.keys(memo)) delete memo[k];
   cursor = 0;
-  clearInterval(pollTimer); clearInterval(idleTimer); clearInterval(backupTimer);
+  clearInterval(pollTimer); clearInterval(idleTimer); clearInterval(backupTimer); clearInterval(nomadTimer);
   document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
   document.getElementById('modal-overlay')?.classList.add('hidden');
 }
@@ -579,6 +603,26 @@ async function grant(userId, pubKey, silent) {
   S.pendingAccess = (S.pendingAccess || []).filter(p => p.id !== userId);
   S.directory = (await api('GET', '/api/directory')).people;
   if (!silent) notify('Accès aux dossiers autorisé.', 'success');
+}
+
+/* ══════════ Portable : état de la synchronisation avec le cabinet ══════════ */
+let nomadTimer = null;
+async function refreshNomad() {
+  try {
+    const st = S.status = await api('GET', '/api/status');
+    const el = document.getElementById('nomad-indicator'); if (!el) return;
+    const ago = st.office.lastSync ? Math.round((Date.now() - st.office.lastSync) / 60e3) : null;
+    const when = ago == null ? 'jamais' : ago < 1 ? 'à l\'instant' : ago < 60 ? `il y a ${ago} min` : ago < 1440 ? `il y a ${Math.round(ago / 60)} h` : `il y a ${Math.round(ago / 1440)} j`;
+    el.classList.remove('hidden');
+    el.className = 'nomad-indicator ' + (st.conflicts ? 'warn' : st.office.reachable ? 'ok' : 'away');
+    el.innerHTML = st.conflicts ? `<i class="fa-solid fa-code-compare"></i> ${st.conflicts} conflit${st.conflicts > 1 ? 's' : ''} à trancher`
+      : st.office.reachable ? `<i class="fa-solid fa-rotate"></i> Cabinet synchronisé ${when}`
+      : `<i class="fa-solid fa-house-laptop"></i> Hors du cabinet${st.pending ? ` · ${st.pending} modification${st.pending > 1 ? 's' : ''} en attente` : ''}`;
+    el.title = st.office.reachable ? 'Les modifications sont échangées automatiquement avec le PC du cabinet' : `Dernière synchronisation : ${when}. Tout sera envoyé au retour sur le Wi-Fi du cabinet.`;
+    el.onclick = () => App.navigate(st.conflicts ? 'conflicts' : 'system');
+    const nav = document.querySelector('.nav-item[data-page="conflicts"]');
+    if (nav) { nav.classList.toggle('hidden', !st.conflicts || S.user?.kind === 'superadmin'); const b = nav.querySelector('.nav-badge'); if (b) b.textContent = st.conflicts; }
+  } catch {}
 }
 
 /* ══════════ Sauvegardes : rappel du mardi ══════════ */
@@ -636,6 +680,7 @@ async function start() {
   };
   try { S.status = await api('GET', '/api/status'); }
   catch (x) { screen(card('Espace cabinet', 'Serveur injoignable', `<div class="login-form"><p class="login-error">${esc(x.message)}</p><button class="btn-login" onclick="location.reload()">Réessayer</button></div>`)); return; }
+  if (S.status.role === 'nomade' && !S.status.paired) return showPairing();
   if (S.status.setupNeeded) return showSetup();
   try { S.sess = await api('GET', '/api/me'); S.user = S.sess.user; showUnlock('Session en cours : saisissez votre mot de passe pour déverrouiller.'); }
   catch { showLogin(); }
@@ -645,6 +690,8 @@ window.CabinetStore = Store;
 window.Secure = {
   get user() { return S.user; }, get directory() { return S.directory; }, get backup() { return S.backup; },
   get pendingAccess() { return S.pendingAccess || []; }, get hasDataKey() { return !!S.dek; }, get demo() { return !!S.status?.demo; },
+  get isNomad() { return S.status?.role === 'nomade'; }, get status() { return S.status; }, refreshNomad,
+  decrypt: (c, id, rec) => C.decryptRecord(S.dek, c, id, rec),
   api, can, canPage, isDentist, logout, lock: () => lock('manual'), changePassword, createUser, resetUser, grant, nextSeq,
   refreshBackupBanner, printRecovery, autoGrant, MODULES, PRESETS, checkPassword: C.checkPassword, generatePassword: C.generatePassword,
 };

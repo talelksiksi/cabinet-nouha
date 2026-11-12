@@ -149,6 +149,16 @@ icônes locales (champ CIN ajouté puis retiré : non nécessaire). Démo : `cab
 (ZIP 34 Mo, Node inclus, INSTALLER.cmd + guide) testé hors installation (14 vérifications). Formulaire du site : motif retiré.
 **À faire** : installation réelle au cabinet ; reprise des données existantes (voir réponse à Talel).
 
+**Avancement (13 novembre 2026)** — portable du Dr Nouha (mode « nomade ») : le cabinet coupe le courant à la fermeture,
+donc le portable garde sa propre copie chiffrée et se resynchronise quand les deux sont sur le Wi-Fi du cabinet.
+Réservé à Dr Nouha (tous droits) et Talel (droits informatiques, pas de dossiers). Association par code à usage unique (15 min),
+certificat du cabinet épinglé ; le cabinet reste la référence ; conflits conservés et tranchés par Dr Nouha (écran
+« Conflits à trancher ») ; actions d'administration du portable relayées au cabinet ; journal du portable remonté (origine
+« portable ») ; factures du portable en série « P ». `INSTALLER-PORTABLE.cmd` ; raccourci bureau avec icône sur les deux
+installations. 35 tests (dont 11 de synchronisation) ; essai réel dans la démo (cabinet :3475 + portable :3476) : modification
+croisée, conflit, résolution côté portable → version reçue au cabinet. **Reste** : décider comment les comptes Talel / Nouha
+sont créés et protégés ; installation réelle (cabinet + portable).
+
 ## 7. Technique (site public sur Cloudflare)
 
 - **Cloudflare Pages** : site public (statique, rapide) + application cabinet.
