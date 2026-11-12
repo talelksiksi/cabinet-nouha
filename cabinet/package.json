@@ -1,0 +1,15 @@
+{
+  "name": "espace-cabinet-nouha",
+  "private": true,
+  "type": "module",
+  "description": "Espace cabinet du Dr Nouha Ksiksi : serveur local (réseau du cabinet uniquement)",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --no-warnings server/index.mjs",
+    "test": "node --no-warnings --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "multicast-dns": "7.2.5",
+    "node-forge": "1.3.1"
+  }
+}

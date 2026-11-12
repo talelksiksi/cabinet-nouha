@@ -106,7 +106,41 @@ Cadre légal : loi organique 2004-63, données de santé = données sensibles ; 
 Héberger chez Cloudflare (hors Tunisie) → **déclaration / autorisation INPDP** à faire par la praticienne ; le chiffrement
 de bout en bout réduit fortement le risque mais ne dispense pas de la démarche. À lui signaler dès le départ.
 
-## 7. Technique (tout sur Cloudflare)
+## 6 bis. Décision d'hébergement de l'espace cabinet (12 novembre 2026) — remplace le §7 pour l'espace cabinet
+
+Après lecture du guide INPDP / Ordre des médecins (`INPDP_guide_medecins.pdf`, délibération n°4 du 5 sept. 2018) :
+un hébergement à distance des dossiers patients exige un **hébergeur de données de santé accrédité** (art. 16) ; Cloudflare
+ne l'est pas et les données sortiraient de Tunisie. **Décision : l'espace cabinet est hébergé au cabinet, accessible
+uniquement sur le Wi-Fi du cabinet.** Le site public reste sur Cloudflare (aucune donnée patient).
+
+- **Machine** : le PC de l'assistante (allumé toute la journée), sous Windows Famille. Pas le PC de la radio (poste médical,
+  logiciel du fabricant : on n'y touche pas). Mise en veille désactivée, redémarrages Windows hors heures d'ouverture.
+- **Onduleur** recommandé (coupures de courant). **Chiffrement du disque** : plus tard (BitLocker = Windows Pro).
+- **Service Windows** (démarre seul) : Node + base SQLite locale. On garde : chiffrement dans le navigateur, niveaux d'accès,
+  super-admin sans accès aux données (exactement ce que le guide demande pour le technicien de maintenance).
+- **Nom sur le réseau** : `cabinet-nouha.local` (annoncé par le service, mDNS) → fonctionne même si l'adresse IP change ou si
+  la box redémarre ; en plus, adresse IP fixe réservée dans la box. HTTPS local (certificat installé une fois par appareil,
+  indispensable au chiffrement dans le navigateur).
+- **Wi-Fi invités** séparé pour les patients.
+- **Sauvegardes** : chiffrées, automatiques **deux fois par jour, 11 h 30 et 16 h 30** (coupures de courant l'été) sur le disque
+  du PC ; si le PC était éteint à l'heure prévue, la sauvegarde part dès son redémarrage. **Rappel chaque mardi à 11 h** dans l'application
+  pour brancher la clé USB, copie chiffrée automatique, puis la clé part hors du cabinet (exigence du guide).
+- **Accès à distance** (domicile, Djerba) : pas pour l'instant. Plus tard éventuellement par VPN, après avis de l'INPDP.
+- **Obligations de la praticienne** (guide) : déclaration + **autorisation préalable** INPDP, désignation d'un **DPO**,
+  **registre** des traitements, **notice** en salle d'attente, conservation 20 ans, contrat de maintenance / confidentialité
+  avec Talel, notification ANSI en cas d'incident. Brouillons à préparer par nous.
+- Site public : retirer le **motif** du message WhatsApp de prise de RDV (donnée de santé via une messagerie hébergée hors de Tunisie).
+
+**Avancement (12 novembre 2026, soir)** — serveur local fait et testé (`cabinet/server/`, voir `cabinet/LISEZMOI.md`) :
+comptes (super-admin / admin / staff à niveaux), invitations (code jamais transmis au serveur ; clé des données jointe
+quand l'invitant la détient), clé de secours, droits appliqués à chaque requête, « son travail uniquement » pour les
+dentistes non admin, données chiffrées + index aveugles, journal sans contenu, sauvegardes 11 h 30 / 16 h 30 + rattrapage,
+clé USB du mardi 11 h, HTTPS local avec autorité du cabinet, nom `cabinet-nouha.local` (mDNS), réseau local uniquement.
+24 tests de bout en bout + essai du vrai serveur (HTTPS, page certificat, nom réseau). **Reste** : brancher l'interface
+(connexion, déverrouillage, synchronisation, écrans Utilisateurs / super-admin / sauvegardes et alerte du mardi,
+verrouillage automatique), polices et bibliothèques hors ligne, installation comme tâche Windows, guide du routeur.
+
+## 7. Technique (site public sur Cloudflare)
 
 - **Cloudflare Pages** : site public (statique, rapide) + application cabinet.
 - **Pages Functions / Workers** : API (authentification, enregistrement des données chiffrées, demandes de RDV).
