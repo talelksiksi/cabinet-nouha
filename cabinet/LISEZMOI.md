@@ -33,7 +33,7 @@ Node.js 22.13 ou plus (SQLite intégré). Variables utiles : `CABINET_DATA` (dos
 
 ## Sauvegardes
 
-- Automatiques à **11 h 30 et 16 h 30** dans `data/backups/` (chiffrées) ; si le PC était éteint, dès son redémarrage.
+- Automatiques à **11 h 30 et 15 h 45** (le cabinet ferme à 16 h) dans `data/backups/` (chiffrées) ; si le PC était éteint, dès son redémarrage.
 - Conservation : 14 jours complets, puis une par mois pendant 12 mois.
 - **Chaque mardi à 11 h**, l'application demande de brancher la clé USB : copie chiffrée et vérifiée dans
   `Sauvegardes-Cabinet-Nouha\` sur la clé, qui repart ensuite hors du cabinet.

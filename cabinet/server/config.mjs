@@ -34,8 +34,8 @@ export function loadConfig(overrides = {}) {
     hostname: process.env.CABINET_HOSTNAME || 'cabinet-nouha.local',
     httpsPort: +(process.env.CABINET_HTTPS_PORT || 443),
     httpPort: +(process.env.CABINET_HTTP_PORT || 80),
-    // Créneaux des sauvegardes automatiques (heure locale du PC) et rappel clé USB
-    backupSlots: [[11, 30], [16, 30]],
+    // Créneaux des sauvegardes automatiques (heure locale du PC) : fin de matinée et juste avant la fermeture (16 h)
+    backupSlots: [[11, 30], [15, 45]],
     usbReminder: { weekday: 2, hour: 11, minute: 0 },   // mardi 11 h 00
     session: { idleMs: 30 * 60e3, maxMs: 11 * 3600e3 }, // verrouillage après 30 min d'inactivité (guide INPDP)
     secrets,

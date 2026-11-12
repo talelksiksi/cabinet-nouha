@@ -122,7 +122,7 @@ uniquement sur le Wi-Fi du cabinet.** Le site public reste sur Cloudflare (aucun
   la box redémarre ; en plus, adresse IP fixe réservée dans la box. HTTPS local (certificat installé une fois par appareil,
   indispensable au chiffrement dans le navigateur).
 - **Wi-Fi invités** séparé pour les patients.
-- **Sauvegardes** : chiffrées, automatiques **deux fois par jour, 11 h 30 et 16 h 30** (coupures de courant l'été) sur le disque
+- **Sauvegardes** : chiffrées, automatiques **deux fois par jour, 11 h 30 et 15 h 45** (juste avant la fermeture de 16 h) (coupures de courant l'été) sur le disque
   du PC ; si le PC était éteint à l'heure prévue, la sauvegarde part dès son redémarrage. **Rappel chaque mardi à 11 h** dans l'application
   pour brancher la clé USB, copie chiffrée automatique, puis la clé part hors du cabinet (exigence du guide).
 - **Accès à distance** (domicile, Djerba) : pas pour l'instant. Plus tard éventuellement par VPN, après avis de l'INPDP.
@@ -134,7 +134,7 @@ uniquement sur le Wi-Fi du cabinet.** Le site public reste sur Cloudflare (aucun
 **Avancement (12 novembre 2026, soir)** — serveur local fait et testé (`cabinet/server/`, voir `cabinet/LISEZMOI.md`) :
 comptes (super-admin / admin / staff à niveaux), invitations (code jamais transmis au serveur ; clé des données jointe
 quand l'invitant la détient), clé de secours, droits appliqués à chaque requête, « son travail uniquement » pour les
-dentistes non admin, données chiffrées + index aveugles, journal sans contenu, sauvegardes 11 h 30 / 16 h 30 + rattrapage,
+dentistes non admin, données chiffrées + index aveugles, journal sans contenu, sauvegardes 11 h 30 / 15 h 45 + rattrapage,
 clé USB du mardi 11 h, HTTPS local avec autorité du cabinet, nom `cabinet-nouha.local` (mDNS), réseau local uniquement.
 24 tests de bout en bout + essai du vrai serveur (HTTPS, page certificat, nom réseau). **Reste** : brancher l'interface
 (connexion, déverrouillage, synchronisation, écrans Utilisateurs / super-admin / sauvegardes et alerte du mardi,

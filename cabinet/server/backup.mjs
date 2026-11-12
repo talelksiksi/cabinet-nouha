@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════
    Sauvegardes
-   - automatiques à 11 h 30 et 16 h 30 (heure du PC) ; si le PC était éteint (coupure de courant),
+   - automatiques à 11 h 30 et 15 h 45, avant la fermeture de 16 h (heure du PC) ; si le PC était éteint (coupure de courant),
      la sauvegarde manquée part dès le redémarrage
    - fichiers chiffrés (AES-256-GCM, clé de sauvegarde du cabinet) et compressés
    - conservation : tout sur 14 jours, puis la première de chaque mois pendant 12 mois (guide INPDP)
@@ -80,7 +80,7 @@ export function createBackup({ db, cfg, log = () => {}, now = () => new Date() }
 
   /* ── Planification ── */
   const lastOk = kind => q(`SELECT MAX(ts) t FROM backups WHERE ok = 1 ${kind ? 'AND kind = ?' : ''}`, ...(kind ? [kind] : []))?.t || 0;
-  /** Dernier créneau (11 h 30 / 16 h 30) déjà passé. */
+  /** Dernier créneau (11 h 30 / 15 h 45) déjà passé. */
   function lastSlot(d = now()) {
     const slots = cfg.backupSlots.map(([h, m]) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m).getTime());
     const past = slots.filter(s => s <= d.getTime());

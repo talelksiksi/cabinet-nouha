@@ -304,12 +304,12 @@ test('clé USB du mardi : copie vérifiée sur la clé, le rappel disparaît', a
   assert.equal((await S.dent.post('/api/backup/usb', { drive: 'Q:' })).status, 400, 'lecteur inconnu refusé');
 });
 
-test('planification : 11 h 30 et 16 h 30, rattrapage après coupure, rappel USB le mardi 11 h', () => {
+test('planification : 11 h 30 et 15 h 45, rattrapage après coupure, rappel USB le mardi 11 h', () => {
   const at = s => new Date(s);
   const b = createBackup({ db: app.db, cfg, now: () => at('2026-07-14T12:05:00') });   // mardi 14 juillet, 12 h 05
   assert.equal(b.lastSlot(at('2026-07-14T12:05:00')), at('2026-07-14T11:30:00').getTime());
-  assert.equal(b.lastSlot(at('2026-07-14T09:00:00')), at('2026-07-13T16:30:00').getTime(), 'avant 11 h 30 : créneau de la veille');
-  assert.equal(b.nextSlot(at('2026-07-14T12:05:00')), at('2026-07-14T16:30:00').getTime());
+  assert.equal(b.lastSlot(at('2026-07-14T09:00:00')), at('2026-07-13T15:45:00').getTime(), 'avant 11 h 30 : créneau de la veille');
+  assert.equal(b.nextSlot(at('2026-07-14T12:05:00')), at('2026-07-14T15:45:00').getTime());
   assert.equal(b.nextSlot(at('2026-07-14T17:00:00')), at('2026-07-15T11:30:00').getTime());
   assert.equal(b.lastUsbReminder(at('2026-07-14T12:05:00')), at('2026-07-14T11:00:00').getTime(), 'mardi après 11 h');
   assert.equal(b.lastUsbReminder(at('2026-07-14T10:59:00')), at('2026-07-07T11:00:00').getTime(), 'mardi avant 11 h : semaine précédente');
