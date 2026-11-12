@@ -115,7 +115,30 @@ de bout en bout réduit fortement le risque mais ne dispense pas de la démarche
 - Dépôt : privé sur `talelksiksi` (nom à confirmer). Déploiement automatique depuis GitHub.
 - Une **démo publique** avec données fictives pourra être ajoutée au portfolio (comme les deux autres projets).
 
-## 8. Étapes
+## 8. Où on en est (12 novembre 2026)
+
+Fait :
+- Dossier, git local (identité personnelle), photos rangées dans `assets/`.
+- `tools/prepare-images.ps1` : découpe les montages avant/après en paires (`site/img/cas/*-avant.jpg` / `*-apres.jpg`),
+  redimensionne les photos sans métadonnées, extrait le logo de la bannière (`site/img/logo-banniere.jpg`).
+  Le cas 06 (montage « polaroïd » côte à côte) n'est pas encore découpé.
+- **Premier aperçu du site public** (`site/index.html`, `styles.css`, `main.js`), en français, statique :
+  héros (portrait, slogan, badge CHU), 6 cartes spécialités, curseur avant/après (5 cas, balayage automatique
+  à l'apparition), « Votre dentiste », fiche « prothèse stabilisée par 2 implants », formulaire de RDV (validation
+  seulement, **n'envoie rien**), carte Google + itinéraire, boutons flottants WhatsApp / RDV, apparitions au défilement.
+  Polices : Fraunces (titres), Plus Jakarta Sans (texte), Caveat (slogans). Couleurs : bleu nuit `#16325c`, or `#c9a24b`.
+- Aperçu local : serveur statique sur le port 3470.
+
+Écarté volontairement : l'image de salle de soins de la bannière (semble être une illustration, pas son cabinet).
+
+Reste à faire en priorité :
+1. Créer le dépôt GitHub privé, pousser, mettre l'aperçu en ligne sur Cloudflare Pages pour le montrer à Dr Nouha.
+2. Version arabe complète (RTL) — le bouton « عربي » affiche pour l'instant « bientôt ».
+3. Compléter téléphone / WhatsApp / horaires (constante `CABINET` en haut de `site/main.js`).
+4. Faire valider les textes (descriptions des cas, points « Votre dentiste ») et les consentements des patients.
+5. Puis le socle sécurité et l'espace cabinet (étapes 3 à 6 ci-dessous).
+
+## 9. Étapes
 
 1. Maquette du site public (FR/AR) avec ses photos → validation par Talel et Dr Nouha.
 2. Galerie avant/après (découpage des montages) + pages spécialités + conseils.
@@ -124,7 +147,7 @@ de bout en bout réduit fortement le risque mais ne dispense pas de la démarche
 5. Ordonnances, paiements, documents, consentements.
 6. Mise en ligne : domaine, DNS, Access, sauvegardes ; formation de la praticienne et de l'assistante.
 
-## 9. Questions ouvertes (à poser au démarrage)
+## 10. Questions ouvertes (à poser au démarrage)
 
 - Nom de domaine souhaité ? Téléphone/WhatsApp, horaires, e-mail du cabinet ?
 - Combien d'utilisateurs (elle + une assistante ?) et quelles adresses e-mail pour Access ?
