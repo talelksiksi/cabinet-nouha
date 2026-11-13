@@ -509,7 +509,7 @@ export function createApi({ db, cfg, backup, log = () => {} }) {
       dataKeyReady: !!q(`SELECT 1 FROM meta WHERE key = 'recovery_dek'`),
       keyHolders: keyHolders().length,
       backup: backup ? backup.status() : null,
-      server: { started: cfg.startedAt, node: process.version, hostname: cfg.hostname, role: isNomad ? 'nomade' : 'cabinet' },
+      server: { started: cfg.startedAt, node: process.version, version: cfg.version, hostname: cfg.hostname, role: isNomad ? 'nomade' : 'cabinet' },
       sync: sync.status(),
     };
   });

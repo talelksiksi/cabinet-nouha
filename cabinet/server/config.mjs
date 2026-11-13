@@ -51,6 +51,8 @@ export function loadConfig(overrides = {}) {
     usbReminder: { weekday: 2, hour: 11, minute: 0 },   // mardi 11 h 00
     session: { idleMs: 30 * 60e3, maxMs: 11 * 3600e3 }, // verrouillage après 30 min d'inactivité (guide INPDP)
     demo: process.env.CABINET_DEMO === '1',
+    // version installée (écrite par le paquet ; « dev » en développement)
+    version: (() => { try { return fs.readFileSync(path.join(ROOT, 'VERSION.txt'), 'utf8').split(/\s/)[0]; } catch { return 'dev'; } })(),
     secrets,
     ...overrides,
   };

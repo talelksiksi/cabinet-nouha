@@ -242,6 +242,7 @@ const Admin = {
           <div><span>Enregistrements chiffrés</span><b>${records}</b></div>
           <div><span>Sessions ouvertes</span><b>${sys.sessions}</b></div>
           <div><span>Clé des données</span><b>${sys.dataKeyReady ? `créée · ${sys.keyHolders} administrateur${sys.keyHolders > 1 ? 's' : ''} la détien${sys.keyHolders > 1 ? 'nent' : 't'}` : 'pas encore créée'}</b></div>
+          <div><span>Version</span><b>${this.esc(sys.server.version || '—')}</b></div>
           <div><span>Serveur démarré</span><b>${this.when(sys.server.started)} · Node ${this.esc(sys.server.node)}</b></div>
           ${Secure.user.kind === 'superadmin' ? `<button class="btn-secondary" style="margin-top:.8rem" onclick="Admin.printBackupKey()"><i class="fa-solid fa-print"></i> Imprimer la clé de sauvegarde</button>` : ''}
         </div></div>

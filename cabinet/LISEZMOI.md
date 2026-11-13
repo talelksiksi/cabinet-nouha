@@ -43,6 +43,20 @@ node tools/build-package.mjs     # → dist/Install-Package-Staff-AAAA.MM.JJ.zip
 - **Owner** : portable du Dr Nouha (`INSTALLER.cmd`, `COMPTES-PROTEGES.cmd`). Guides : `GUIDE-PORTABLE.html`, `GUIDE-SECOURS.html`.
 - Node.js inclus, aucune donnée ni compte de démonstration.
 
+## Mises à jour
+
+```bash
+node tools/build-package.mjs maj   # → dist/Mise-a-jour-EspaceCabinet-AAAA.MM.JJ-HHMM.exe (sans argument : les 3 livrables)
+```
+
+Un seul `.exe` (IExpress, fourni avec Windows) pour le PC du cabinet **et** le portable : il contient `payload.zip`
+(`commun/` = node, app, outils, scripts ; `staff/` et `owner/` = fichiers propres à chaque rôle) et `package/maj/mettre-a-jour.ps1`.
+Le script détecte le rôle (`data/config.json`), compare `app/VERSION.txt` (rien à faire si déjà à jour), demande les droits
+administrateur, arrête le serveur, copie la base (`data/avant-maj-…`, 3 gardées), déplace l'ancienne version dans
+`version-precedente`, installe, redémarre et vérifie ; en cas d'échec, remet l'ancienne version et la base. Journal :
+`data/mises-a-jour.log`. Essai sans tâche Windows : `mettre-a-jour.ps1 -Payload … -Dest <dossier> -Test`
+(port lu dans `CABINET_PLAIN_PORT`). Les migrations SQL s'appliquent au redémarrage. Version affichée dans Sauvegardes & système.
+
 ## Comptes protégés
 
 `nouha` (titulaire, admin) et `talel` (administrateur informatique) sont créés par l'installation du cabinet (`tools/comptes.mjs init`),

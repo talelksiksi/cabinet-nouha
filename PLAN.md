@@ -176,6 +176,12 @@ et de la clé de sauvegarde, seulement si son disque est chiffré. Mot de passe 
 dossiers. Risque accepté : mot de passe oublié + portable perdu + feuille perdue en même temps = dossiers perdus. Changement de
 portable : installer, associer, s'y connecter une fois (copie créée), retirer l'ancien au cabinet, désinstaller avec SUPPRIMER. 41 tests.
 
+**Mises à jour (13 novembre 2026)** — un seul fichier `Mise-a-jour-EspaceCabinet-<version>.exe` (IExpress) pour le cabinet et le
+portable : vérifie la version, sauvegarde la base, remplace le programme, redémarre, et revient tout seul en arrière si la nouvelle
+version ne démarre pas. Essayé sur les installations d'essai : mise à jour réussie (données et association conservées), mise à jour
+cassée → retour automatique, relance → « déjà à jour », portable → fichiers du rôle Owner. Pas encore lancé via l'.exe sur un vrai PC
+(UAC, SmartScreen). Versions datées à la minute (AAAA.MM.JJ-HHMM).
+
 ## 7. Technique (site public sur Cloudflare)
 
 - **Cloudflare Pages** : site public (statique, rapide) + application cabinet.

@@ -120,6 +120,23 @@ Le nouveau portable n'a pas encore de copie de secours (elle se crée quand le D
 <li><b>Code d'activation</b> pas encore utilisé à l'installation : relancer <code>INSTALLER.cmd</code> sur le PC du cabinet.</li>
 </ul>
 
+<h2><span>M</span>Mises à jour (nouvelles fonctions, corrections)</h2>
+<p>Talel envoie <b>un seul fichier</b> : <code>Mise-a-jour-EspaceCabinet-&lt;version&gt;.exe</code>. Le même fichier sert au PC du cabinet et au portable.</p>
+<ol>
+<li>De préférence <b>après la fermeture</b> (le serveur s'arrête une à deux minutes).</li>
+<li><b>PC du cabinet</b> : double-cliquer le fichier → accepter la demande de Windows (accord d'un administrateur). C'est tout : la fenêtre
+indique chaque étape et se termine par « Mise à jour terminée ».</li>
+<li><b>Portable du Dr Nouha</b> : même fichier, même geste (de préférence après le PC du cabinet, pour que les deux aient la même version).</li>
+<li>Les autres PC du cabinet n'ont <b>rien</b> à faire (le fichier le dit s'il est lancé dessus par erreur).</li>
+</ol>
+<div class="box ok">Ce que fait le fichier tout seul : il vérifie la version installée (rien à faire si elle est déjà à jour), arrête le serveur,
+<b>copie la base</b> à côté (<code>data\avant-maj-…</code>), garde l'ancienne version (<code>C:\EspaceCabinet\version-precedente</code>), installe la nouvelle,
+redémarre et vérifie. <b>Si la nouvelle version ne démarre pas, il remet tout seul l'ancienne version et la base</b>, et le dit à l'écran.
+Données, comptes, mots de passe, sauvegardes, certificat, association du portable : jamais touchés. Version installée : <b>Sauvegardes &amp; système → Version</b>.
+Historique : <code>C:\EspaceCabinet\data\mises-a-jour.log</code>.</div>
+<div class="box warn"><b>« Windows a protégé votre ordinateur »</b> (fichier reçu par e-mail, WhatsApp ou clé USB) : cliquer <b>Informations complémentaires</b>
+→ <b>Exécuter quand même</b>. Ne lancer que les fichiers reçus directement de Talel.</div>
+
 <h2><span>H</span>Coupure de courant</h2>
 <p>Rien à faire : au redémarrage du PC, le serveur repart seul et la sauvegarde manquée (11 h 30 ou 15 h 45) est faite immédiatement.</p>
 
