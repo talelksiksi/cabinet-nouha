@@ -265,3 +265,10 @@ Reste à faire en priorité :
 - Les patients de Djerba sont-ils les siens (même dossier) ou ceux de la clinique (à ne pas mélanger) ?
 - Afficher des tarifs indicatifs ?
 - Accès au compte Cloudflare : Talel fournit un jeton d'API limité, ou fait les étapes lui-même guidé.
+
+**Logo et démonstration (13 novembre 2026)** — logo du cabinet (tuile blanche) sur la connexion, le menu, les factures, devis et
+ordonnances ; plus d'âge sur les devis. Feuilles de style revalidées à chaque chargement (ETag) : après une mise à jour, plus de
+vieille mise en page en cache. Exécutable de démonstration autonome pour relecture par le Dr Nouha + guide pas à pas en français.
+Les .exe (démo et mise à jour) passent d'IExpress à un petit lanceur C# compilé avec csc.exe (fourni avec Windows).
+
+**À faire AVANT de livrer la vraie application :** obtenir le **code CNAM (code conventionnel) du Dr Nouha** et l'intégrer à l'application.

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide de la démonstration — Espace cabinet</title>
+<style>
+  :root { --navy: #162e5a; --gold: #c99a4a; --ink: #1f2937; --muted: #6b7280; --line: #e5e7eb; --soft: #f7f5f0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: var(--ink); font: 16px/1.6 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 24px 64px; }
+  header { display: flex; align-items: center; gap: 18px; border-bottom: 2px solid var(--gold); padding-bottom: 18px; margin-bottom: 28px; }
+  header .tile { width: 64px; height: 64px; border-radius: 16px; background: #fff; box-shadow: 0 4px 16px rgba(22,46,90,.15); display: grid; place-items: center; font-size: 34px; }
+  header small { display: block; color: var(--gold); letter-spacing: .14em; text-transform: uppercase; font-weight: 600; font-size: 12px; }
+  h1 { margin: 0; color: var(--navy); font-size: 26px; }
+  h2 { color: var(--navy); font-size: 20px; margin: 36px 0 10px; display: flex; align-items: center; gap: 10px; }
+  h2 span { background: var(--navy); color: #fff; border-radius: 50%; width: 30px; height: 30px; display: inline-grid; place-items: center; font-size: 15px; flex-shrink: 0; }
+  h3 { font-size: 16px; margin: 20px 0 6px; color: var(--navy); }
+  ol, ul { padding-left: 22px; } li { margin: 4px 0; }
+  .box { border-radius: 10px; padding: 14px 16px; margin: 14px 0; background: var(--soft); border-left: 4px solid var(--gold); }
+  .box.blue { background: #eef3fb; border-left-color: var(--navy); }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 15px; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--soft); }
+  code, .k { background: #f1f5f9; border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-family: Consolas, monospace; font-size: 15px; white-space: nowrap; }
+  .menu { font-weight: 600; color: var(--navy); }
+  .note { color: var(--muted); font-size: 14px; }
+  @media print { main { padding: 0; } h2 { break-after: avoid; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="tile">🦷</div>
+  <div><small>Cabinet dentaire Dr Nouha Ksiksi</small><h1>Espace cabinet — guide de la démonstration</h1></div>
+</header>
+
+<div class="box blue"><b>Tout est fictif.</b> Les patients, rendez-vous, factures et chiffres de cette démonstration sont inventés.
+Rien ne sort de ce PC et rien n'est envoyé sur Internet. Vous pouvez tout essayer, tout modifier, tout supprimer : la démonstration
+repart de zéro à chaque lancement.</div>
+
+<h2><span>1</span>Lancer la démonstration</h2>
+<ol>
+  <li>Double-cliquer sur le fichier <b>Demo-Espace-Cabinet-….exe</b>.<br>
+    <span class="note">Si Windows affiche « Windows a protégé votre ordinateur » : cliquer <b>Informations complémentaires</b> puis <b>Exécuter quand même</b>.
+    Aucun mot de passe administrateur n'est demandé.</span></li>
+  <li>Une fenêtre noire s'ouvre et prépare le cabinet fictif (environ 15 secondes). <b>Ne pas la fermer</b> : c'est elle qui fait tourner la démonstration.</li>
+  <li>Le navigateur s'ouvre tout seul sur la page de connexion. Sinon, ouvrir <code>http://localhost:3475</code>.</li>
+  <li>Pour relancer plus tard : icône <b>Espace cabinet (démo)</b> sur le bureau. Pour arrêter : fermer la fenêtre noire.</li>
+</ol>
+
+<h2><span>2</span>Se connecter</h2>
+<p>Le mot de passe est le même pour tous les comptes de la démonstration : <code>Demo-Sourire-26!</code></p>
+<table>
+  <tr><th>Identifiant</th><th>Qui</th><th>Ce que ce compte voit</th></tr>
+  <tr><td><code>nouha</code></td><td>Dr Nouha</td><td>Tout le cabinet, y compris l'argent et la gestion de l'équipe. <b>Commencez par celui-ci.</b></td></tr>
+  <tr><td><code>amel</code></td><td>Assistante confirmée</td><td>Agenda, patients, salle d'attente, factures et caisse.</td></tr>
+  <tr><td><code>stagiaire</code></td><td>Assistante temporaire</td><td>Agenda, salle d'attente, tâches ; dossiers patients en lecture seule ; pas d'argent.</td></tr>
+  <tr><td><code>remplacant</code></td><td>Dentiste remplaçant</td><td>Uniquement les patients qui lui sont confiés.</td></tr>
+  <tr><td><code>talel</code></td><td>Informatique</td><td>Comptes, journal, sauvegardes ; <b>aucun dossier patient</b>.</td></tr>
+</table>
+<p class="note">Pour changer de compte : bouton de déconnexion en bas du menu de gauche. Le cadenas à côté verrouille l'écran quand on s'absente
+(le mot de passe est redemandé, la session reste ouverte).</p>
+
+<h2><span>3</span>Une journée type au cabinet</h2>
+<h3>Le matin — <span class="menu">Tableau de bord</span></h3>
+<p>Le premier écran après la connexion : rendez-vous du jour, patients, recettes du mois, factures en attente.</p>
+
+<h3>Les rendez-vous — <span class="menu">Rendez-vous</span></h3>
+<ol>
+  <li>Vue <b>Semaine</b> ou <b>Liste</b> en haut. Cliquer un créneau libre pour créer un rendez-vous, ou le bouton <b>Nouveau rendez-vous</b>.</li>
+  <li>En haut de la page, l'encadré orange montre les <b>demandes de rendez-vous envoyées depuis le site internet</b> du cabinet :
+    <b>Planifier</b> (le rendez-vous et le patient sont créés) ou <b>Refuser</b>.</li>
+</ol>
+
+<h3>L'arrivée des patients — <span class="menu">Salle d'attente</span></h3>
+<p>Colonnes : <b>Rendez-vous à venir</b>, <b>En salle d'attente</b>, <b>Au fauteuil</b>, <b>Terminés</b>, <b>Absents</b>.
+L'assistante fait passer le patient d'une colonne à l'autre ; tout le monde voit qui attend et depuis combien de temps.</p>
+
+<h3>Le dossier du patient — <span class="menu">Patients</span></h3>
+<ol>
+  <li>Rechercher un patient (nom, téléphone) puis cliquer sur son nom.</li>
+  <li>Onglets du dossier :
+    <ul>
+      <li><b>Schéma dentaire</b> : cliquer une dent pour noter son état (carie, obturée, dévitalisée, couronne, implant, extraite…).</li>
+      <li><b>Rendez-vous</b>, <b>Soins</b>, <b>Paiements</b> du patient.</li>
+      <li><b>Fichiers &amp; Radios</b> : ajouter des radios ou photos.</li>
+      <li><b>Ordonnances &amp; CNAM</b> : créer une <b>ordonnance</b>, un <b>certificat médical</b>, un <b>devis</b> ou le
+        <b>bulletin de soins CNAM</b>, puis <b>Imprimer</b> (en-tête du cabinet et logo inclus).</li>
+    </ul></li>
+</ol>
+
+<h3>Les soins et les prothèses — <span class="menu">Traitements</span> et <span class="menu">Prothèses &amp; labo</span></h3>
+<p><b>Traitements</b> : plans de soins en cours. <b>Prothèses &amp; labo</b> : suivi des travaux envoyés au prothésiste
+(envoyé, reçu, posé) pour ne rien oublier. <b>Avant / après</b> : photos comparatives des cas.</p>
+
+<h3>L'argent — <span class="menu">Paiements</span>, <span class="menu">Caisse &amp; dépenses</span>, <span class="menu">Rapports</span></h3>
+<ol>
+  <li><b>Paiements</b> → <b>Nouvelle facture</b> : choisir le patient, les actes, le montant versé. L'icône <b>œil</b> d'une facture
+    ouvre l'aperçu avec le logo du cabinet, puis <b>Imprimer</b>.</li>
+  <li><b>Actes &amp; tarifs</b> : la liste des actes du cabinet et leurs prix.</li>
+  <li><b>Caisse &amp; dépenses</b> : rapport de caisse du jour, dépenses du mois par catégorie (loyer, labo, salaires…), chèques émis.</li>
+  <li><b>Rapports</b> : revenus, rendez-vous, actes les plus rentables, par mois ou par année.</li>
+</ol>
+
+<h3>L'organisation — <span class="menu">Tâches</span></h3>
+<p>Petites tâches entre la docteure et l'équipe (rappeler un patient, commander du matériel…), avec la personne responsable.</p>
+
+<h2><span>4</span>La sécurité, à essayer</h2>
+<ol>
+  <li>Se connecter avec <code>stagiaire</code> : le menu est réduit, pas d'accès à l'argent, dossiers en lecture seule.</li>
+  <li>Se connecter avec <code>talel</code> : l'administrateur informatique ne voit <b>aucun</b> dossier patient.</li>
+  <li>Avec <code>nouha</code> : <span class="menu">Utilisateurs</span> → choisir un membre de l'équipe et cocher, domaine par domaine,
+    ce qu'il peut voir ou modifier. <span class="menu">Journal d'activité</span> : qui a fait quoi, et quand.</li>
+  <li><span class="menu">Sauvegardes &amp; système</span> : sauvegardes automatiques chaque jour (11 h 30 et 15 h 45) et copie sur clé USB.</li>
+</ol>
+<div class="box">Au cabinet, les dossiers sont <b>chiffrés</b> : même quelqu'un qui emporterait le PC ne pourrait pas les lire sans un mot de passe.
+L'application ne fonctionne que sur le Wi-Fi du cabinet ; le portable du Dr Nouha en garde une copie synchronisée.</div>
+
+<h2><span>5</span>Le portable du Dr Nouha</h2>
+<p>La démonstration fait aussi tourner « le portable » : ouvrir <code>http://localhost:3476</code>. Seuls <code>nouha</code> et
+<code>talel</code> peuvent s'y connecter. Il contient la même chose que le cabinet et se synchronise avec lui.</p>
+
+<h2><span>6</span>Vos remarques</h2>
+<p>Notez tout ce qui manque, ce qui gêne, les mots à changer, ce qui serait plus pratique autrement — une capture d'écran
+(touches <span class="k">Windows</span> + <span class="k">Maj</span> + <span class="k">S</span>) avec une phrase suffit. Envoyez le tout à Talel.</p>
+<p class="note">Quand vous avez fini : fermer la fenêtre noire. Pour enlever complètement la démonstration de ce PC :
+dossier <code>%LOCALAPPDATA%\EspaceCabinet-Demo</code> → <b>SUPPRIMER-DEMO.cmd</b>.</p>
+</main>
+</body>
+</html>

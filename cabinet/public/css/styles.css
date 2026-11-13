@@ -106,13 +106,14 @@ img { max-width: 100%; display: block; }
 .login-logo { text-align: center; margin-bottom: 2rem; }
 .login-logo-icon {
   width: 72px; height: 72px;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: #fff;
   border-radius: 20px;
   display: flex; align-items: center; justify-content: center;
   margin: 0 auto 1rem;
-  font-size: 2rem; color: #fff;
-  box-shadow: 0 8px 24px rgba(61,109,120,.35);
+  box-shadow: 0 8px 24px rgba(22,46,90,.18);
+  border: 1px solid rgba(22,46,90,.08);
 }
+.login-logo-icon img { width: 54px; height: auto; display: block; }
 .login-logo h1 { font-size: 1.75rem; font-weight: 700; color: var(--text); }
 .login-logo h1 span { color: var(--primary); }
 .login-logo p { color: var(--text-muted); margin-top: .25rem; font-size: .9rem; }
@@ -201,11 +202,12 @@ img { max-width: 100%; display: block; }
 .sidebar-logo { display: flex; align-items: center; gap: .75rem; min-width: 0; }
 .sidebar-logo-icon {
   width: 38px; height: 38px; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: #fff;
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem; color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
 }
+.sidebar-logo-icon img { width: 28px; height: auto; display: block; }
 .sidebar-logo-text { min-width: 0; }
 .logo-title { display: block; font-weight: 700; font-size: 1.05rem; color: #fff; white-space: nowrap; }
 .logo-sub   { display: block; font-size: .7rem; color: var(--accent); font-weight: 600; letter-spacing: .05em; }
@@ -848,7 +850,13 @@ img { max-width: 100%; display: block; }
 /* Facture impression */
 .invoice-print { padding: 1.5rem; }
 .invoice-print-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
-.invoice-print-title { font-size: 2rem; font-weight: 800; color: var(--primary); }
+.invoice-print-title { font-size: 2rem; font-weight: 800; color: #162e5a; }
+.invoice-brand { display: flex; align-items: center; gap: .9rem; }
+.invoice-brand img { width: 44px; height: auto; }
+.invoice-brand b { display: block; font-size: 1.05rem; color: #162e5a; }
+.invoice-brand small { display: block; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: #b08a45; font-weight: 600; }
+.invoice-brand span { display: block; font-size: .8rem; color: var(--text-muted); }
+.invoice-print-header { border-bottom: 2px solid #d6a658; padding-bottom: 1rem; }
 .invoice-print-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
 .invoice-print-table th { background: var(--bg); padding: .6rem 1rem; font-size: .8rem; text-align: left; border-bottom: 2px solid var(--border); }
 .invoice-print-table td { padding: .6rem 1rem; border-bottom: 1px solid var(--border-light); font-size: .875rem; }

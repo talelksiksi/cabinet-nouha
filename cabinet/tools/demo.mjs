@@ -3,7 +3,8 @@
    - repart de zéro à chaque lancement (dossier data-demo/, jamais dans Git)
    - crée les comptes et un cabinet animé (données fictives) en passant par la vraie API et le vrai chiffrement
    - les identifiants de démonstration sont écrits dans data-demo/COMPTES-DEMO.txt
-   Usage : node tools/demo.mjs [--keep] [--no-open] [--port 3475]
+   Usage : node tools/demo.mjs [--keep] [--no-open] [--port 3475] [--revue]
+   --revue : version envoyée pour relecture (un même mot de passe simple pour tous les comptes, affiché à l'écran)
    ═══════════════════════════════════════════ */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,7 +16,8 @@ import { buildDataset } from './demo-data.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
-const PORT = +arg('--port', 3475), KEEP = process.argv.includes('--keep'), OPEN = !process.argv.includes('--no-open'), PORTABLE = !process.argv.includes('--sans-portable');
+const PORT = +arg('--port', 3475), KEEP = process.argv.includes('--keep'), OPEN = !process.argv.includes('--no-open'), PORTABLE = !process.argv.includes('--sans-portable'), REVUE = process.argv.includes('--revue');
+const REVUE_PW = 'Demo-Sourire-26!';
 const DATA = path.join(ROOT, 'data-demo'), DATA_P = path.join(ROOT, 'data-demo-portable'), PORT_P = PORT + 1;
 const BASE = `http://localhost:${PORT}`;
 
@@ -23,7 +25,7 @@ if (!KEEP) { fs.rmSync(DATA, { recursive: true, force: true }); fs.rmSync(DATA_P
 const fresh = !fs.existsSync(path.join(DATA, 'cabinet.db'));
 const srv = spawn(process.execPath, ['--no-warnings', path.join(ROOT, 'server', 'index.mjs')], {
   cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'],
-  env: { ...process.env, CABINET_DATA: DATA, CABINET_DEMO: '1', CABINET_PLAIN_PORT: String(PORT), CABINET_HTTPS_PORT: '8443', CABINET_HTTP_PORT: '8080' },
+  env: { ...process.env, CABINET_DATA: DATA, CABINET_DEMO: '1', CABINET_PLAIN_PORT: String(PORT), CABINET_HTTPS_PORT: String(REVUE ? PORT + 10 : 8443), CABINET_HTTP_PORT: String(REVUE ? PORT + 11 : 8080) },
 });
 let log = '';
 srv.stdout.on('data', d => { log += d; process.stdout.write(String(d).replace(/code d'installation : \S+/, 'code d\'installation : (démo)')); });
@@ -57,7 +59,8 @@ async function activate(call, username, code, password) {
 
 async function seed() {
   const secrets = JSON.parse(fs.readFileSync(path.join(DATA, 'secrets.json'), 'utf8'));
-  const pw = { talel: C.generatePassword(16), nouha: C.generatePassword(16), amel: C.generatePassword(16), stagiaire: C.generatePassword(16), remplacant: C.generatePassword(16) };
+  const gen = () => REVUE ? REVUE_PW : C.generatePassword(16);
+  const pw = { talel: gen(), nouha: gen(), amel: gen(), stagiaire: gen(), remplacant: gen() };
   const t = client(), n = client();
   // super-admin
   let salt = C.newSalt();
@@ -141,6 +144,23 @@ async function startPortable() {
     ddb.close();
   }
   if (PORTABLE) await startPortable();
-  console.log(`\n  ➜ Cabinet : ${BASE}${PORTABLE ? `\n  ➜ Portable du Dr Nouha : http://localhost:${PORT_P}  (Dr Nouha et administrateur uniquement)` : ''}\n  ➜ Identifiants : ${path.join(DATA, 'COMPTES-DEMO.txt')}\n  (Ctrl+C pour arrêter)\n`);
+  if (REVUE) console.log(`
+  ════════════════════════════════════════════════════════════
+   ESPACE CABINET — DÉMONSTRATION (patients et chiffres fictifs)
+  ════════════════════════════════════════════════════════════
+   Le navigateur s'ouvre tout seul sur ${BASE}
+   Mot de passe de TOUS les comptes : ${REVUE_PW}
+
+     nouha       Dr Nouha : tout le cabinet
+     amel        assistante confirmée (caisse incluse)
+     stagiaire   temporaire : agenda, salle d'attente, patients en lecture
+     remplacant  dentiste remplaçant : uniquement ses patients
+     talel       administrateur informatique : aucun dossier patient
+
+   Version portable (comme sur le portable du Dr Nouha) : http://localhost:${PORT_P}
+   Pour arrêter la démonstration : fermer cette fenêtre.
+  ════════════════════════════════════════════════════════════
+`);
+  else console.log(`\n  ➜ Cabinet : ${BASE}${PORTABLE ? `\n  ➜ Portable du Dr Nouha : http://localhost:${PORT_P}  (Dr Nouha et administrateur uniquement)` : ''}\n  ➜ Identifiants : ${path.join(DATA, 'COMPTES-DEMO.txt')}\n  (Ctrl+C pour arrêter)\n`);
   if (OPEN) exec(process.platform === 'win32' ? `start "" "${BASE}"` : `xdg-open ${BASE}`);
 })().catch(e => { console.error(e); stop(); });

@@ -276,7 +276,7 @@ function wirePw(prefix, usernameGetter) {
   };
 }
 const card = (title, sub, body, foot = '') => `
-  <div class="login-logo"><div class="login-logo-icon"><i class="fa-solid fa-tooth"></i></div><h1>${title}</h1><p>${sub}</p></div>
+  <div class="login-logo"><div class="login-logo-icon"><img src="img/logo.png" alt="Cabinet dentaire Dr Nouha Ksiksi" width="54" style="width:54px;height:auto"></div><h1>${title}</h1><p>${sub}</p></div>
   ${body}${foot}`;
 
 function showSetup() {

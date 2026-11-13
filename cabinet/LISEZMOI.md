@@ -49,13 +49,24 @@ node tools/build-package.mjs     # → dist/Install-Package-Staff-AAAA.MM.JJ.zip
 node tools/build-package.mjs maj   # → dist/Mise-a-jour-EspaceCabinet-AAAA.MM.JJ-HHMM.exe (sans argument : les 3 livrables)
 ```
 
-Un seul `.exe` (IExpress, fourni avec Windows) pour le PC du cabinet **et** le portable : il contient `payload.zip`
+Un seul `.exe` (lanceur C# `package/lanceur/lanceur.cs`, compilé par `csc.exe` fourni avec Windows ; icône = logo) pour le PC du cabinet **et** le portable : il contient `payload.zip`
 (`commun/` = node, app, outils, scripts ; `staff/` et `owner/` = fichiers propres à chaque rôle) et `package/maj/mettre-a-jour.ps1`.
 Le script détecte le rôle (`data/config.json`), compare `app/VERSION.txt` (rien à faire si déjà à jour), demande les droits
 administrateur, arrête le serveur, copie la base (`data/avant-maj-…`, 3 gardées), déplace l'ancienne version dans
 `version-precedente`, installe, redémarre et vérifie ; en cas d'échec, remet l'ancienne version et la base. Journal :
 `data/mises-a-jour.log`. Essai sans tâche Windows : `mettre-a-jour.ps1 -Payload … -Dest <dossier> -Test`
 (port lu dans `CABINET_PLAIN_PORT`). Les migrations SQL s'appliquent au redémarrage. Version affichée dans Sauvegardes & système.
+
+## Démonstration à envoyer pour relecture
+
+```bash
+node tools/build-package.mjs demo   # → dist/Demo-Espace-Cabinet-<version>.exe + dist/Guide-Demo-Espace-Cabinet.html
+```
+
+Un seul `.exe`, sans droits administrateur : installe dans `%LOCALAPPDATA%\EspaceCabinet-Demo`, raccourcis « Espace cabinet (démo) »
+et « Guide de la démo » sur le bureau, lance `tools/demo.mjs --revue` (données fictives, mot de passe unique `Demo-Sourire-26!`,
+tout en 127.0.0.1, pas de mDNS → aucune alerte du pare-feu). Relancé alors qu'une démo tourne : il la ferme et la remplace.
+`SUPPRIMER-DEMO.cmd` dans le dossier pour tout enlever.
 
 ## Comptes protégés
 

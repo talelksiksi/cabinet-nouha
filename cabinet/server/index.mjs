@@ -69,8 +69,12 @@ export function createApp(cfg, { log = console.log } = {}) {
     fs.stat(file, (err, st) => {
       if (err || !st.isFile()) { res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', ...SECURITY_HEADERS }); return res.end('<h1>Page introuvable</h1>'); }
       const ext = path.extname(file).toLowerCase();
-      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Content-Length': st.size,
-        'Cache-Control': ext === '.html' || ext === '.mjs' || ext === '.js' ? 'no-cache' : 'public, max-age=86400', ...SECURITY_HEADERS });
+      // Tout est revalidé (ETag) sauf les bibliothèques de vendor/ : après une mise à jour, chaque poste voit la nouvelle version.
+      const etag = `"${st.size.toString(36)}-${Math.floor(st.mtimeMs).toString(36)}"`;
+      const vendor = rel.startsWith('/vendor/');
+      const headers = { 'Cache-Control': vendor ? 'public, max-age=604800' : 'no-cache', ETag: etag, ...SECURITY_HEADERS };
+      if (req.headers['if-none-match'] === etag) { res.writeHead(304, headers); return res.end(); }
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Content-Length': st.size, ...headers });
       if (req.method === 'HEAD') return res.end();
       fs.createReadStream(file).pipe(res);
     });
@@ -137,13 +141,16 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     // ── PC du cabinet : https://cabinet-nouha.local pour tout le réseau du cabinet ──
     cfg.tls = ensureTls(cfg, log);
     const app = createApp(cfg, { log });
+    // Démonstration : rien n'écoute sur le réseau (pas d'alerte du pare-feu Windows, pas d'annonce mDNS)
+    const BIND = cfg.demo ? '127.0.0.1' : '0.0.0.0';
     https.createServer({ key: cfg.tls.key, cert: cfg.tls.cert, minVersion: 'TLSv1.2' }, app.handler)
-      .listen(cfg.httpsPort, '0.0.0.0', () => log(`Espace cabinet : https://${cfg.hostname}${cfg.httpsPort === 443 ? '' : ':' + cfg.httpsPort}/`));
-    http.createServer(plainHandler(cfg)).listen(cfg.httpPort, '0.0.0.0', () => log(`Installation du certificat : http://${cfg.hostname}${cfg.httpPort === 80 ? '' : ':' + cfg.httpPort}/certificat`))
+      .on('error', e => log('Port HTTPS indisponible', e))
+      .listen(cfg.httpsPort, BIND, () => log(`Espace cabinet : https://${cfg.hostname}${cfg.httpsPort === 443 ? '' : ':' + cfg.httpsPort}/`));
+    http.createServer(plainHandler(cfg)).listen(cfg.httpPort, BIND, () => log(`Installation du certificat : http://${cfg.hostname}${cfg.httpPort === 80 ? '' : ':' + cfg.httpPort}/certificat`))
       .on('error', e => log('Port HTTP indisponible (page certificat)', e));
     // Accès direct sur ce PC uniquement (http://localhost) : démonstration et poste serveur lui-même
     if (cfg.plainPort) http.createServer(app.handler).listen(cfg.plainPort, '127.0.0.1', () => log(`Sur ce PC : http://localhost:${cfg.plainPort}/`));
-    mdns = startMdns(cfg.hostname, log);
+    if (!cfg.demo) mdns = startMdns(cfg.hostname, log);
     app.backup.start();
     if (app.db.prepare('SELECT COUNT(*) n FROM users').get().n === 0)
       log(`PREMIÈRE INSTALLATION — code d'installation : ${cfg.secrets.setupToken}  (à saisir sur https://${cfg.hostname}/)`);

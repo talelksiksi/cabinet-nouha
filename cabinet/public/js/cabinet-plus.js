@@ -661,13 +661,13 @@ const Docs = {
   remove(id) { App.confirmDelete('Supprimer ce document ?', () => { DB.set('documents', DB.get('documents').filter(x => x.id != id)); App.toast('Document supprimé', 'warning'); this.render(App.currentPatientId); }); },
   header() {
     const s = DB.settings();
-    return `<div class="doc-head"><div><b>${esc(doctorName())}</b><span>Chirurgien-dentiste</span><span>${esc(s.clinicAddr || '1 Bis Rue Pasteur (en face du CHU Habib Bourguiba)')}</span><span>${esc(s.clinicCity || '4100 Médenine')} · Tél. ${esc(s.clinicPhone || '+216 23 232 407')}</span></div><div class="doc-logo"><i class="fa-solid fa-tooth"></i><span>${esc(s.clinicName || 'Cabinet dentaire Dr Nouha Ksiksi')}</span></div></div>`;
+    return `<div class="doc-head"><div><b>${esc(doctorName())}</b><span>Chirurgien-dentiste</span><span>${esc(s.clinicAddr || '1 Bis Rue Pasteur (en face du CHU Habib Bourguiba)')}</span><span>${esc(s.clinicCity || '4100 Médenine')} · Tél. ${esc(s.clinicPhone || '+216 23 232 407')}</span></div><div class="doc-logo"><img src="img/logo.png" alt="" width="40" style="width:40px;height:auto"><span>${esc(s.clinicName || 'Cabinet dentaire Dr Nouha Ksiksi')}</span></div></div>`;
   },
   print(id) {
     if (!id) return;
     const d = DB.get('documents').find(x => x.id == id); if (!d) return;
     const p = DB.patients().find(x => x.id == d.patientId) || {};
-    const who = `<div class="doc-patient"><span>Patient(e) : <b>${esc(p.firstName + ' ' + p.lastName)}</b>${p.dob ? ` · ${Utils.age(p.dob)} ans` : ''}</span><span>Le ${Utils.formatDate(d.date)}</span></div>`;
+    const who = `<div class="doc-patient"><span>Patient(e) : <b>${esc(p.firstName + ' ' + p.lastName)}</b>${p.dob && d.type !== 'devis' ? ` · ${Utils.age(p.dob)} ans` : ''}</span><span>Le ${Utils.formatDate(d.date)}</span></div>`;   // pas d'âge sur les documents financiers
     if (d.type === 'cnam') { this.preview(this.cnamHtml(d, p), 'A4 landscape', this.TITLES.cnam); return; }
     let html = this.header();
     if (d.type === 'ordonnance') {

@@ -3,9 +3,10 @@
      dist/Install-Package-Staff-<version>.zip      → installation du PC du cabinet (+ autres PC du cabinet)
      dist/Install-Package-Owner-<version>.zip      → installation du portable du Dr Nouha
      dist/Mise-a-jour-EspaceCabinet-<version>.exe  → MISE À JOUR : un seul fichier, pour le PC du cabinet ET le portable
+     dist/Demo-Espace-Cabinet-<version>.exe        → DÉMONSTRATION à envoyer pour relecture (seulement avec l'argument demo)
    Node.js, l'application (dépendances incluses), les scripts et les guides sont dedans : rien à installer d'autre.
-   L'exécutable est fabriqué avec IExpress (fourni avec Windows) : rien à télécharger non plus pour le construire.
-   Usage : node tools/build-package.mjs [staff|owner|maj]
+   Les .exe sont compilés avec csc.exe, le compilateur C# fourni avec Windows (package/lanceur/lanceur.cs) : rien à télécharger non plus.
+   Usage : node tools/build-package.mjs [staff|owner|maj|demo]   (sans argument : staff, owner et maj)
    ═══════════════════════════════════════════ */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -113,38 +114,71 @@ function buildUpdate() {
   const SRC = path.join(WORK, 'cab');
   fs.mkdirSync(SRC);
   zipDir(path.join(P, '*'), path.join(SRC, 'payload.zip'));
-  ps1(path.join(PKG, 'maj', 'mettre-a-jour.ps1'), path.join(SRC, 'mettre-a-jour.ps1'));
-  fs.writeFileSync(path.join(SRC, 'maj.cmd'), crlf(fs.readFileSync(path.join(PKG, 'maj', 'maj.cmd'), 'utf8')));
-  const exe = path.join(DIST, `${NAME}.exe`);
-  fs.rmSync(exe, { force: true });
-  const files = ['payload.zip', 'mettre-a-jour.ps1', 'maj.cmd'];
-  const sed = [
-    '[Version]', 'Class=IEXPRESS', 'SEDVersion=3',
-    '[Options]', 'PackagePurpose=InstallApp', 'ShowInstallProgramWindow=0', 'HideExtractAnimation=1', 'UseLongFileName=1',
-    'InsideCompressed=0', 'CAB_FixedSize=0', 'CAB_ResvCodeSigning=0', 'RebootMode=N',
-    'InstallPrompt=%InstallPrompt%', 'DisplayLicense=%DisplayLicense%', 'FinishMessage=%FinishMessage%', 'TargetName=%TargetName%',
-    'FriendlyName=%FriendlyName%', 'AppLaunched=%AppLaunched%', 'PostInstallCmd=%PostInstallCmd%',
-    'AdminQuietInstCmd=%AdminQuietInstCmd%', 'UserQuietInstCmd=%UserQuietInstCmd%', 'SourceFiles=SourceFiles',
-    '[Strings]', 'InstallPrompt=', 'DisplayLicense=', 'FinishMessage=', `TargetName=${exe}`,
-    'FriendlyName=Espace cabinet - mise a jour', 'AppLaunched=cmd /c maj.cmd', 'PostInstallCmd=<None>', 'AdminQuietInstCmd=', 'UserQuietInstCmd=',
-    ...files.map((f, i) => `FILE${i}="${f}"`),
-    '[SourceFiles]', `SourceFiles0=${SRC}\\`,
-    '[SourceFiles0]', ...files.map((_, i) => `%FILE${i}%=`), '',
-  ].join('\r\n');
-  const sedFile = path.join(WORK, 'maj.sed');
-  fs.writeFileSync(sedFile, sed);
-  execFileSync(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'iexpress.exe'), ['/N', '/Q', sedFile], { stdio: 'inherit' });
-  for (let i = 0; i < 120 && !fs.existsSync(exe); i++) execFileSync(process.execPath, ['-e', 'setTimeout(()=>{},500)']);
-  if (!fs.existsSync(exe)) throw new Error('IExpress n\'a pas produit la mise à jour');
+  ps1(path.join(PKG, 'maj', 'mettre-a-jour.ps1'), path.join(SRC, 'script.ps1'));
+  const exe = lanceur(WORK, SRC, `${NAME}.exe`, 'Espace cabinet - mise à jour');
   fs.rmSync(WORK, { recursive: true, force: true });
   console.log(`Mise à jour prête : ${exe} (${mo(exe)}) — un seul fichier pour le PC du cabinet et le portable`);
+}
+
+/* Exécutable autonome : le lanceur C# (package/lanceur/lanceur.cs) avec SRC/script.ps1 et SRC/payload.zip en ressources.
+   Compilé par csc.exe (.NET Framework 4, présent sur tout Windows 10/11) ; icône = logo du cabinet ; aucun droit administrateur demandé
+   par l'exe lui-même (le script de mise à jour les demande quand il en a besoin). */
+function lanceur(WORK, SRC, exeName, title) {
+  const exe = path.join(DIST, exeName);
+  fs.rmSync(exe, { force: true });
+  const win = process.env.SystemRoot || 'C:\\Windows';
+  const csc = [path.join(win, 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'), path.join(win, 'Microsoft.NET', 'Framework', 'v4.0.30319', 'csc.exe')].find(f => fs.existsSync(f));
+  if (!csc) throw new Error('csc.exe (.NET Framework 4) introuvable');
+  const info = path.join(WORK, 'infos.cs');
+  const q = t => t.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  fs.writeFileSync(info, '\uFEFF' + [
+    'using System.Reflection;',
+    `[assembly: AssemblyTitle("${q(title)}")]`, `[assembly: AssemblyProduct("Espace cabinet - Dr Nouha Ksiksi")]`,
+    `[assembly: AssemblyCompany("Talel Ksiksi")]`, `[assembly: AssemblyInformationalVersion("${VERSION}")]`,
+    `[assembly: AssemblyVersion("${VERSION.replace(/^(\d+)\.(\d+)\.(\d+)-(\d+)$/, (_, y, m, d2, hm) => `${y}.${+m}.${+d2}.${+hm}`)}")]`, '',
+  ].join('\r\n'));
+  execFileSync(csc, ['/nologo', '/target:exe', '/platform:anycpu', '/optimize+', '/codepage:65001',
+    `/out:${exe}`, `/win32icon:${path.join(ROOT, 'public', 'favicon.ico')}`,
+    `/resource:${path.join(SRC, 'script.ps1')},script.ps1`, `/resource:${path.join(SRC, 'payload.zip')},payload.zip`,
+    path.join(PKG, 'lanceur', 'lanceur.cs'), info], { stdio: 'inherit' });
+  if (!fs.existsSync(exe)) throw new Error(`csc n'a pas produit ${exeName}`);
+  return exe;
+}
+
+/* Démonstration pour relecture : un seul .exe, sans droits administrateur, installé dans le profil de l'utilisateur.
+   Données 100 % fictives créées au premier lancement (rien de réel dedans), un même mot de passe simple pour tous les comptes. */
+function buildDemo() {
+  const NAME = `Demo-Espace-Cabinet-${VERSION}`, WORK = path.join(DIST, `.${NAME}`), P = path.join(WORK, 'payload');
+  fs.rmSync(WORK, { recursive: true, force: true });
+  fs.mkdirSync(path.join(P, 'node'), { recursive: true });
+  fs.copyFileSync(NODE, path.join(P, 'node', 'node.exe'));
+  const lic = path.join(path.dirname(NODE), 'LICENSE');
+  if (fs.existsSync(lic)) fs.copyFileSync(lic, path.join(P, 'node', 'LICENSE.txt'));
+  const APP = path.join(P, 'app');
+  for (const dir of ['server', 'public', 'migrations', 'node_modules']) fs.cpSync(path.join(ROOT, dir), path.join(APP, dir), { recursive: true });
+  fs.mkdirSync(path.join(APP, 'tools'));
+  for (const f of ['demo.mjs', 'demo-data.mjs']) fs.copyFileSync(path.join(ROOT, 'tools', f), path.join(APP, 'tools', f));
+  for (const f of ['package.json', 'package-lock.json']) fs.copyFileSync(path.join(ROOT, f), path.join(APP, f));
+  fs.writeFileSync(path.join(APP, 'VERSION.txt'), `${VERSION} (demo)\r\nNode ${nodeVersion}\r\n`);
+  for (const f of ['DEMARRER-DEMO.cmd', 'SUPPRIMER-DEMO.cmd']) fs.writeFileSync(path.join(P, f), crlf(fs.readFileSync(path.join(PKG, 'demo', f), 'utf8')));
+  fs.copyFileSync(path.join(PKG, 'demo', 'GUIDE-DEMO.html'), path.join(P, 'GUIDE-DEMO.html'));
+  for (const bad of ['data', 'data-demo', 'data-demo-portable']) if (fs.existsSync(path.join(APP, bad))) throw new Error(`Dossier de données dans la démo : ${bad}`);
+  const SRC = path.join(WORK, 'cab');
+  fs.mkdirSync(SRC);
+  zipDir(path.join(P, '*'), path.join(SRC, 'payload.zip'));
+  ps1(path.join(PKG, 'demo', 'installer-demo.ps1'), path.join(SRC, 'script.ps1'));
+  const exe = lanceur(WORK, SRC, `${NAME}.exe`, 'Espace cabinet - démonstration');
+  fs.rmSync(WORK, { recursive: true, force: true });
+  fs.copyFileSync(path.join(PKG, 'demo', 'GUIDE-DEMO.html'), path.join(DIST, `Guide-Demo-Espace-Cabinet.html`));
+  console.log(`Démonstration prête : ${exe} (${mo(exe)}) + dist/Guide-Demo-Espace-Cabinet.html`);
 }
 
 fs.mkdirSync(DIST, { recursive: true });
 const only = process.argv[2];
 for (const f of fs.readdirSync(DIST)) {
-  const kindOf = /^Install-Package-Staff/.test(f) ? 'staff' : /^Install-Package-Owner/.test(f) ? 'owner' : /^\.?Mise-a-jour-/.test(f) ? 'maj' : /^EspaceCabinet-/.test(f) ? 'old' : null;
-  if (kindOf && (!only || only === kindOf || kindOf === 'old')) fs.rmSync(path.join(DIST, f), { recursive: true, force: true });
+  const kindOf = /^Install-Package-Staff/.test(f) ? 'staff' : /^Install-Package-Owner/.test(f) ? 'owner' : /^\.?Mise-a-jour-/.test(f) ? 'maj' : /^\.?Demo-Espace-Cabinet-|^Guide-Demo-/.test(f) ? 'demo' : /^EspaceCabinet-/.test(f) ? 'old' : null;
+  if (kindOf && (only === kindOf || (!only && kindOf !== 'demo') || kindOf === 'old')) fs.rmSync(path.join(DIST, f), { recursive: true, force: true });
 }
 for (const kind of Object.keys(KINDS)) if (!only || only === kind) build(kind);
 if (!only || only === 'maj') buildUpdate();
+if (only === 'demo') buildDemo();

@@ -164,7 +164,8 @@
 .doc-A4 { max-width: 800px; }
 .doc-head { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 2px solid var(--primary); padding-bottom: .8rem; margin-bottom: 1rem; }
 .doc-head b { display: block; font-size: 1.05rem; } .doc-head span { display: block; font-size: .78rem; color: #555; }
-.doc-logo { text-align: right; color: var(--primary); } .doc-logo i { font-size: 1.6rem; } .doc-logo span { font-weight: 700; color: var(--primary); }
+.doc-logo { text-align: right; color: #162e5a; display: flex; flex-direction: column; align-items: flex-end; gap: .25rem; } .doc-logo img { width: 40px; height: auto; } .doc-logo span { font-weight: 700; color: #162e5a; font-size: .8rem; }
+.doc-head { border-bottom-color: #d6a658 !important; }
 .doc-title { text-align: center; font-size: 1.25rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin: .5rem 0 1rem; }
 .doc-patient { display: flex; justify-content: space-between; font-size: .85rem; margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap; }
 .rx-print { padding-left: 1.2rem; display: grid; gap: .8rem; }
