@@ -170,6 +170,12 @@ sont créés et protégés ; installation réelle (cabinet + portable).
   Guides : installation, portable, secours. Pas de téléphones (PC et portable uniquement). Tendances « +12 % / +8 % » factices retirées.
 - 40 tests ; essai de bout en bout sur les paquets extraits (activation des deux comptes, clé des données, association, outil du portable).
 
+**Décision (13 novembre 2026)** — feuille de secours : Talel craignait qu'elle soit perdue. Option B retenue : la feuille reste
+(dernier recours, sous enveloppe hors du cabinet) et le **portable du Dr Nouha garde une copie de secours** de la clé des données
+et de la clé de sauvegarde, seulement si son disque est chiffré. Mot de passe oublié → l'outil du portable rend aussi l'accès aux
+dossiers. Risque accepté : mot de passe oublié + portable perdu + feuille perdue en même temps = dossiers perdus. Changement de
+portable : installer, associer, s'y connecter une fois (copie créée), retirer l'ancien au cabinet, désinstaller avec SUPPRIMER. 41 tests.
+
 ## 7. Technique (site public sur Cloudflare)
 
 - **Cloudflare Pages** : site public (statique, rapide) + application cabinet.

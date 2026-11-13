@@ -51,6 +51,15 @@ son propre mot de passe. Seul `tools/comptes.mjs reinitialiser|renommer` sur le 
 la demande part au cabinet à la synchronisation (jeton du portable associé). Une réinitialisation ne rend jamais l'accès aux dossiers
 (feuille de secours nécessaire).
 
+## Copie de secours sur le portable (option B)
+
+Sur le portable, si le disque est chiffré (vérifié par l'installation → `"escrow": true` dans `data/config.json`), le navigateur
+du Dr Nouha dépose la clé des données dans `data/secours-portable.json` (dossier réservé aux administrateurs Windows), après
+vérification sur un vrai dossier ; la clé de sauvegarde du cabinet y est ajoutée à l'association. `comptes.mjs reinitialiser nouha`
+joint alors la clé des données au code (chiffrée par lui, comme une invitation) : accès rendu sans feuille de secours.
+`comptes.mjs cle-sauvegarde` affiche la clé de sauvegarde du cabinet. Portable retiré au cabinet ou disque déchiffré → copie effacée.
+La feuille de secours reste le dernier recours.
+
 ## Restauration sur un PC de remplacement
 
 Les sauvegardes (format `CNBK2`) emportent l'identité du serveur (poivre, autorité de certificat) : `RESTAURER.cmd` + clé de sauvegarde

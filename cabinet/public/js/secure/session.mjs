@@ -620,6 +620,11 @@ async function refreshNomad() {
       : `<i class="fa-solid fa-house-laptop"></i> Hors du cabinet${st.pending ? ` · ${st.pending} modification${st.pending > 1 ? 's' : ''} en attente` : ''}`;
     el.title = st.office.reachable ? 'Les modifications sont échangées automatiquement avec le PC du cabinet' : `Dernière synchronisation : ${when}. Tout sera envoyé au retour sur le Wi-Fi du cabinet.`;
     el.onclick = () => App.navigate(st.conflicts ? 'conflicts' : 'system');
+    // copie de secours sur ce portable : déposée dès que le Dr Nouha a ses dossiers ouverts
+    if (st.escrow === 'missing' && S.dek && S.user?.kind === 'admin' && S.user?.protected && !S.escrowSent) {
+      S.escrowSent = true;
+      api('POST', '/api/portable/escrow', { dek: await C.exportDek(S.dek) }).catch(() => { S.escrowSent = false; });
+    }
     const nav = document.querySelector('.nav-item[data-page="conflicts"]');
     if (nav) { nav.classList.toggle('hidden', !st.conflicts || S.user?.kind === 'superadmin'); const b = nav.querySelector('.nav-badge'); if (b) b.textContent = st.conflicts; }
   } catch {}

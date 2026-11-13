@@ -35,6 +35,8 @@ export function loadConfig(overrides = {}) {
     plainPort: +(process.env.CABINET_PLAIN_PORT || local.plainPort || 0) || null,
     // démonstration / essais : adresse directe du PC du cabinet (sinon il est trouvé sur le Wi-Fi par son nom)
     officeUrl: process.env.CABINET_OFFICE_URL || local.officeUrl || null,
+    // portable : garder une copie de secours de la clé des données (uniquement si le disque du portable est chiffré)
+    escrow: process.env.CABINET_ESCROW === '1' || local.escrow === true,
     dataDir,
     dbFile: path.join(dataDir, 'cabinet.db'),
     backupDir: path.join(dataDir, 'backups'),

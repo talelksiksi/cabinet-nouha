@@ -90,14 +90,16 @@ switch ($Action) {
     Write-Host '  2  Réinitialiser le compte de Talel       (mot de passe oublié)'
     Write-Host '  3  Changer le nom affiché du Dr Nouha'
     Write-Host '  4  Changer le nom affiché de Talel'
+    Write-Host '  5  Afficher la clé de sauvegarde du cabinet  (PC du cabinet perdu, feuille introuvable)'
     Write-Host '  Entrée : quitter sans rien changer'
     $c = Read-Host 'Choix'
+    if ($c -eq '5') { & $node --no-warnings $tool cle-sauvegarde; Pause-End; exit }
     $who = if ($c -in '1', '3') { 'nouha' } elseif ($c -in '2', '4') { 'talel' } else { $null }
     if (-not $who) { exit }
     if ($c -in '1', '2') {
       Write-Host ''
       Write-Host "  Le mot de passe actuel de « $who » cessera de fonctionner partout (cabinet et portable)." -ForegroundColor Yellow
-      if ($who -eq 'nouha') { Write-Host '  Ensuite, l''accès aux dossiers se récupère avec la FEUILLE DE SECOURS imprimée : l''avoir sous la main.' -ForegroundColor Yellow }
+      if ($who -eq 'nouha') { Write-Host '  L''accès aux dossiers revient avec le nouveau code si la copie de secours de ce portable existe (voir l''état ci-dessus) ; sinon, avec la FEUILLE DE SECOURS.' -ForegroundColor Yellow }
       if ((Read-Host 'Tapez OUI pour continuer') -ne 'OUI') { exit }
       & $node --no-warnings $tool reinitialiser $who
     } else {

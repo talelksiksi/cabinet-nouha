@@ -23,7 +23,7 @@ before(async () => {
   office = createApp(ocfg, { log: () => {} });
   officeSrv = await serveOn(office);
   OFFICE = `http://127.0.0.1:${officeSrv.address().port}`;
-  lcfg = loadConfig({ dataDir: path.join(dir, 'laptop'), role: 'nomade', officeUrl: OFFICE, syncEvery: 3600e3 });
+  lcfg = loadConfig({ dataDir: path.join(dir, 'laptop'), role: 'nomade', officeUrl: OFFICE, syncEvery: 3600e3, escrow: true });
   laptop = createApp(lcfg, { log: () => {} });
   laptopSrv = await serveOn(laptop);
   LAPTOP = `http://127.0.0.1:${laptopSrv.address().port}`;
@@ -64,7 +64,7 @@ async function read(c, dek) {
   return out;
 }
 const tool = (data, role, ...args) => {
-  try { return { code: 0, out: execFileSync(process.execPath, ['--no-warnings', path.join(ROOT, 'tools', 'comptes.mjs'), ...args], { env: { ...process.env, CABINET_DATA: data, CABINET_ROLE: role }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) }; }
+  try { return { code: 0, out: execFileSync(process.execPath, ['--no-warnings', path.join(ROOT, 'tools', 'comptes.mjs'), ...args], { env: { ...process.env, CABINET_DATA: data, CABINET_ROLE: role, CABINET_ESCROW: role === 'nomade' ? '1' : '' }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) }; }
   catch (e) { return { code: e.status, out: String(e.stdout) + String(e.stderr) }; }
 };
 
@@ -162,6 +162,43 @@ test('mot de passe oublié : l\'outil du portable donne un code, le Dr Nouha ret
   assert.equal((await login(client(LAPTOP), 'nouha', PW.nouha2)).status, 200);
   const journal = (await S.talel.get('/api/audit?limit=200')).entries || (await S.talel.get('/api/audit')).entries || [];
   assert.ok(journal.some(e => e.action === 'compte_protege_reinitialise'), 'tracé dans le journal du cabinet');
+});
+
+test('copie de secours du portable : mot de passe oublié → accès aux dossiers rendu SANS la feuille de secours', async () => {
+  const l = client(LAPTOP);
+  const r = await login(l, 'nouha', PW.nouha2);
+  assert.equal(r.status, 200);
+  assert.equal((await l.get('/api/status')).escrow, 'missing');
+  // une mauvaise clé est refusée (elle doit déchiffrer un vrai dossier)
+  assert.equal((await l.post('/api/portable/escrow', { dek: C.b64(C.randomBytes(32)) })).status, 400);
+  // l'administrateur informatique ne peut pas déposer de clé (il n'en a pas)
+  const t = client(LAPTOP); await login(t, 'talel', PW.talel);
+  assert.equal((await t.post('/api/portable/escrow', { dek: await C.exportDek(r.dek) })).status, 403);
+  assert.equal((await l.post('/api/portable/escrow', { dek: await C.exportDek(r.dek) })).status, 200);
+  assert.equal((await l.get('/api/status')).escrow, 'ok');
+  assert.match(tool(lcfg.dataDir, 'nomade', 'etat').out, /Copie de secours : présente/);
+  // clé de sauvegarde du cabinet gardée sur le portable (PC du cabinet perdu, feuille introuvable)
+  assert.ok(tool(lcfg.dataDir, 'nomade', 'cle-sauvegarde').out.includes(ocfg.secrets.backupKey));
+  // mot de passe oublié : l'outil du portable donne un code qui rend AUSSI l'accès aux dossiers
+  const out = tool(lcfg.dataDir, 'nomade', 'reinitialiser', 'nouha');
+  assert.equal(out.code, 0, out.out);
+  assert.match(out.out, /rendu automatiquement/);
+  const code = out.out.match(/[A-Z2-9]{5}-[A-Z2-9]{5}-[A-Z2-9]{5}-[A-Z2-9]{5}/)[0];
+  assert.equal((await laptop.sync.syncOnce()).ok, true);
+  const n = client(OFFICE);
+  const a = await activate(n, 'nouha', code, PW.nouha2);
+  assert.equal(a.status, 200, a.message);
+  assert.equal(a.user.status, 'active', 'accès aux dossiers rendu sans feuille de secours');
+  const back = await login(S.nouha = client(OFFICE), 'nouha', PW.nouha2);
+  assert.equal((await read(S.nouha, back.dek)).patients.p1.lastName, 'Avant');
+  // la réinitialisation de Talel n'emporte jamais la clé des données
+  const t2 = tool(lcfg.dataDir, 'nomade', 'reinitialiser', 'talel');
+  assert.doesNotMatch(t2.out, /rendu automatiquement/);
+  const tcode = t2.out.match(/[A-Z2-9]{5}-[A-Z2-9]{5}-[A-Z2-9]{5}-[A-Z2-9]{5}/)[0];
+  await laptop.sync.syncOnce();
+  const chk = await client(OFFICE).post('/api/invite/check', { username: 'talel', inviteAuth: await C.inviteAuth(tcode, 'talel') });
+  assert.equal(chk.inviteDek, null);
+  assert.equal((await activate(S.talel = client(OFFICE), 'talel', tcode, PW.talel)).status, 200);
 });
 
 test('PC du cabinet remplacé : restauration de la sauvegarde USB, mêmes mots de passe, le portable renvoie ce qui manquait', async () => {

@@ -111,7 +111,7 @@ async function startPortable() {
   const fresh = !fs.existsSync(path.join(DATA_P, 'portable.json'));
   srvP = spawn(process.execPath, ['--no-warnings', path.join(ROOT, 'server', 'index.mjs')], {
     cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, CABINET_DATA: DATA_P, CABINET_ROLE: 'nomade', CABINET_PLAIN_PORT: String(PORT_P), CABINET_OFFICE_URL: BASE, CABINET_DEMO: '1' },
+    env: { ...process.env, CABINET_DATA: DATA_P, CABINET_ROLE: 'nomade', CABINET_PLAIN_PORT: String(PORT_P), CABINET_OFFICE_URL: BASE, CABINET_DEMO: '1', CABINET_ESCROW: '1' },
   });
   let plog = ''; srvP.stdout.on('data', d => { plog += d; }); srvP.stderr.on('data', d => process.stderr.write(d));
   for (let i = 0; i < 80 && !plog.includes('portable'); i++) await new Promise(r => setTimeout(r, 250));

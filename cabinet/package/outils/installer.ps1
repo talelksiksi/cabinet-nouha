@@ -61,7 +61,18 @@ foreach ($d in 'app', 'node', 'outils') {
 Copy-Item -Force "$Src\*.cmd", "$Src\*.html", "$Src\*.txt" $Dest -ErrorAction SilentlyContinue
 # Données : accès réservé aux administrateurs du PC et au service
 icacls "$Dest\data" /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
-if ($Portable) { Set-Content -Path $cfgFile -Value ('{ "role": "nomade", "plainPort": ' + $Port + ' }') -Encoding ASCII }
+if ($Portable) {
+  # Copie de secours de la clé des données sur ce portable : seulement si le disque est chiffré (BitLocker / chiffrement de l'appareil)
+  $bl = $null
+  try { $bl = (New-Object -ComObject Shell.Application).NameSpace('C:').Self.ExtendedProperty('System.Volume.BitLockerProtection') } catch {}
+  $encrypted = $bl -in 1, 3, 6
+  if (-not $encrypted) {
+    # deuxième avis (Windows en anglais ou en français) : « Protection On » / « Protection activée »
+    try { $encrypted = [bool]((manage-bde -status C: 2>$null) -match 'Protection (On|activ)') } catch {}
+  }
+  $escrow = if ($encrypted) { 'true' } else { 'false' }
+  Set-Content -Path $cfgFile -Value ('{ "role": "nomade", "plainPort": ' + $Port + ', "escrow": ' + $escrow + ' }') -Encoding ASCII
+}
 Ok 'Programme copié ; dossier des données protégé'
 
 if (-not $Portable) {
@@ -142,6 +153,15 @@ Write-Host '  Installation terminée' -ForegroundColor Green
 Write-Host '══════════════════════════════════════════════' -ForegroundColor DarkCyan
 if ($Portable) {
   Write-Host "  Adresse sur ce portable : http://localhost:$Port"
+  if ($encrypted) {
+    Write-Host '  Disque chiffré : la copie de secours du Dr Nouha sera gardée sur ce portable.' -ForegroundColor Green
+  } else {
+    Write-Host ''
+    Write-Host '  ATTENTION : le disque de ce portable n''est PAS chiffré.' -ForegroundColor Yellow
+    Write-Host '  La copie de secours (accès rendu sans la feuille de secours) est DÉSACTIVÉE sur ce portable.' -ForegroundColor Yellow
+    Write-Host '  Pour l''activer : Paramètres → Confidentialité et sécurité → Chiffrement de l''appareil (ou BitLocker),' -ForegroundColor Yellow
+    Write-Host '  attendre la fin du chiffrement, puis relancer INSTALLER.cmd.' -ForegroundColor Yellow
+  }
   if (-not $update) {
     Write-Host ''
     Write-Host '  À FAIRE MAINTENANT, AU CABINET (portable sur le Wi-Fi du cabinet) :' -ForegroundColor Yellow

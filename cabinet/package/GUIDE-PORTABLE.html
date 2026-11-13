@@ -34,14 +34,18 @@ th { background: #f3f5f8; }
 <div class="box ok"><b>Ce que fait le portable :</b> une copie complète et chiffrée des dossiers, utilisable à la maison sans Internet.
 Dès qu'il est sur le <b>Wi-Fi du cabinet</b> avec le PC du cabinet allumé, tout se synchronise dans les deux sens (chaque minute).
 Seuls le <b>Dr Nouha</b> (tous ses droits) et <b>Talel</b> (ses droits informatiques, sans les dossiers) peuvent s'y connecter.
-Il porte aussi l'outil <b>« comptes protégés »</b>, seul moyen de réinitialiser le compte du Dr Nouha ou de Talel.</div>
+Il porte aussi l'outil <b>« comptes protégés »</b>, seul moyen de réinitialiser le compte du Dr Nouha ou de Talel,
+et la <b>copie de secours</b> : une copie de la clé des données et de la clé de sauvegarde du cabinet, qui permet de rendre l'accès aux dossiers
+sans la feuille de secours (la feuille reste rangée en dernier recours).</div>
 
 <h2><span>1</span>Avant de commencer</h2>
 <ul>
 <li>Windows 10 ou 11, 64 bits.</li>
 <li>Le compte Windows du portable a un <b>mot de passe</b> (ou un code PIN) et des <b>droits administrateur</b> : l'outil « comptes protégés » en dépend.
 Ne pas partager ce compte Windows.</li>
-<li>Conseillé : activer le <b>chiffrement de l'appareil</b> (Paramètres → Confidentialité et sécurité → Chiffrement de l'appareil, ou BitLocker).</li>
+<li><b>Chiffrement du disque activé</b> : Paramètres → Confidentialité et sécurité → <b>Chiffrement de l'appareil</b> (ou BitLocker sur Windows Pro).
+Attendre la fin du chiffrement avant d'installer. <b>Sans chiffrement, la copie de secours est désactivée</b> sur ce portable (l'installation le signale) :
+seule la feuille de secours permettra alors de retrouver les dossiers.</li>
 </ul>
 
 <h2><span>2</span>Installer</h2>
@@ -58,6 +62,7 @@ Ne pas partager ce compte Windows.</li>
 <li>Sur un PC du cabinet, le Dr Nouha (ou Talel) se connecte → <b>Sauvegardes &amp; système → Portables associés → Associer un portable</b>. Un code s'affiche (valable 15 minutes).</li>
 <li>Sur le portable, page « Association » : saisir ce code → <b>Associer</b>. Les dossiers sont copiés (quelques minutes la première fois).</li>
 <li>Se connecter sur le portable avec <b>le même identifiant et le même mot de passe qu'au cabinet</b>.</li>
+<li>Cette première connexion du Dr Nouha crée la <b>copie de secours</b>. Vérifier : <code>COMPTES-PROTEGES.cmd</code> affiche « Copie de secours : présente ».</li>
 </ol>
 
 <h2><span>4</span>Au quotidien</h2>
@@ -80,19 +85,34 @@ C'est le <b>seul</b> moyen de toucher au compte du Dr Nouha ou de Talel : il n'e
 <li>Choisir <b>1</b> (Dr Nouha) ou <b>2</b> (Talel), taper <b>OUI</b>. Un <b>nouveau code d'activation</b> s'affiche : le recopier.</li>
 <li>Emmener le portable au cabinet (Wi-Fi du cabinet) : la demande part en moins d'une minute. Relancer l'outil : la ligne indique « appliquée au cabinet ».</li>
 <li>Sur un PC du cabinet : <b>Première connexion (code d'activation ou d'invitation)</b> → identifiant + nouveau code → nouveau mot de passe (valable 72 h).</li>
-<li><b>Dr Nouha uniquement</b> : l'application demande ensuite la <b>feuille de secours</b> imprimée pour redonner l'accès aux dossiers. La saisir : tout revient.</li>
+<li><b>Dr Nouha</b> : avec la copie de secours du portable, le code rend <b>aussi l'accès aux dossiers</b> : tout est là dès l'activation.
+Sans copie de secours (disque non chiffré, ou portable neuf pas encore utilisé par elle), l'application demande la <b>feuille de secours</b>.</li>
 <li>Le portable reçoit le nouveau mot de passe à la synchronisation suivante.</li>
 </ol>
 <h3>Changer le nom affiché</h3>
 <p>Choix <b>3</b> ou <b>4</b>, saisir le nom. Appliqué au cabinet à la synchronisation suivante.</p>
-<div class="box warn">Une réinitialisation ne donne <b>jamais</b> accès aux dossiers : sans la feuille de secours, le nouveau mot de passe ouvre le compte mais pas les dossiers.
-Chaque demande est inscrite dans le journal du cabinet (« outil du portable »).</div>
+<h3>Clé de sauvegarde du cabinet</h3>
+<p>Choix <b>5</b> : affiche la clé de sauvegarde du cabinet, pour restaurer la clé USB sur un PC de remplacement si la feuille imprimée est introuvable.</p>
+<div class="box warn">La copie de secours ne sert qu'à l'outil, avec les droits administrateur de ce portable, et uniquement pour le compte du Dr Nouha
+(la réinitialisation de Talel ne donne jamais accès aux dossiers). Chaque demande et chaque consultation sont inscrites dans le journal du cabinet (« outil du portable »).
+C'est pourquoi le compte Windows du portable doit avoir un mot de passe et rester personnel.</div>
 
-<h2><span>6</span>Perte, vol, panne</h2>
+<h2><span>6</span>Changer de portable</h2>
+<ol>
+<li><b>Ancien portable, au cabinet</b> : attendre « Cabinet synchronisé » en haut de l'écran (plus aucune modification en attente).</li>
+<li><b>Nouveau portable</b> : vérifier le chiffrement du disque (étape 1), extraire ce paquet, <code>INSTALLER.cmd</code>, puis l'associer (étape 3) et
+<b>s'y connecter une fois</b> : la copie de secours y est créée. Contrôler avec <code>COMPTES-PROTEGES.cmd</code> (« présente »).</li>
+<li><b>Au cabinet</b> : <b>Sauvegardes &amp; système → Portables associés → Retirer</b> l'ancien portable.</li>
+<li><b>Ancien portable</b> : <code>C:\EspaceCabinet\DESINSTALLER.cmd</code> et taper <code>SUPPRIMER</code> pour effacer ses données et sa copie de secours.
+(Un portable retiré au cabinet efface aussi lui-même sa copie de secours à sa prochaine tentative de synchronisation.)</li>
+</ol>
+<p>Les deux portables peuvent rester associés en même temps le temps du changement : rien n'est perdu.</p>
+
+<h2><span>7</span>Perte, vol, panne</h2>
 <p>Voir <code>GUIDE-SECOURS.html</code>. En bref : au cabinet, <b>Sauvegardes &amp; système → Portables associés → Retirer</b> ; les dossiers du portable restent chiffrés ;
 on installe ce même paquet sur un nouveau portable et on l'associe (étape 3).</p>
 
-<h2><span>7</span>Mise à jour</h2>
+<h2><span>8</span>Mise à jour</h2>
 <p>Extraire la nouvelle version du paquet Owner et relancer <code>INSTALLER.cmd</code> sur le portable : les données et l'association sont conservées.</p>
 </main>
 </body>

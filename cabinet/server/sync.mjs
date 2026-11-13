@@ -84,7 +84,7 @@ export function createSync(h) {
       run('INSERT INTO nodes (id, name, token_hash, created_by, created_at) VALUES (?, ?, ?, ?, ?)', id, String(b.name || 'Ordinateur portable').slice(0, 60), sha(`${pepper()}|node|${id}|${token}`), entry.by, now);
       const K = pairKey(code), iv = crypto.randomBytes(12);
       const c = crypto.createCipheriv('aes-256-gcm', K, iv);
-      const ct = Buffer.concat([c.update(JSON.stringify({ nodeId: id, token, pepper: pepper() })), c.final(), c.getAuthTag()]).toString('base64');
+      const ct = Buffer.concat([c.update(JSON.stringify({ nodeId: id, token, pepper: pepper(), backupKey: cfg.secrets.backupKey })), c.final(), c.getAuthTag()]).toString('base64');
       const caPem = cfg.tls?.caPem ? String(cfg.tls.caPem) : '';
       ctx.origin = 'portable';
       audit({ ...ctx, user: getUser(entry.by) }, 'portable_associe', id, { nom: String(b.name || '') });
@@ -189,6 +189,26 @@ export function createSync(h) {
     fs.existsSync(stateFile) ? JSON.parse(fs.readFileSync(stateFile, 'utf8')) : {});
   const save = () => fs.writeFileSync(stateFile, JSON.stringify(S, null, 2), { mode: 0o600 });
 
+  /* Copie de secours (option B) : clé des données + clé de sauvegarde du cabinet, sur ce portable seulement,
+     dans le dossier des données (réservé aux administrateurs Windows), disque chiffré exigé à l'installation.
+     Sert à l'outil « comptes protégés » : mot de passe du Dr Nouha oublié → accès rendu sans la feuille de secours. */
+  const escrowFile = path.join(cfg.dataDir, 'secours-portable.json');
+  const readEscrow = () => { try { return JSON.parse(fs.readFileSync(escrowFile, 'utf8')); } catch { return null; } };
+  const writeEscrow = e => fs.writeFileSync(escrowFile, JSON.stringify(e, null, 2), { mode: 0o600 });
+  const wipeEscrow = () => { try { fs.rmSync(escrowFile, { force: true }); } catch {} };
+  const escrowState = () => !cfg.escrow ? 'off' : readEscrow()?.dek ? 'ok' : 'missing';
+  if (!cfg.escrow) wipeEscrow();          // chiffrement du disque désactivé depuis : plus de copie de secours ici
+  function verifyDek(raw) {
+    // la clé reçue doit déchiffrer un vrai dossier (s'il en existe) : pas de copie de secours erronée
+    const r = q('SELECT collection, id, iv, data FROM records WHERE deleted = 0 AND data IS NOT NULL LIMIT 1');
+    if (!r) return true;
+    try {
+      const ct = Buffer.from(r.data, 'base64'), d = crypto.createDecipheriv('aes-256-gcm', raw, Buffer.from(r.iv, 'base64'));
+      d.setAAD(Buffer.from(`${r.collection}/${r.id}`)); d.setAuthTag(ct.subarray(ct.length - 16));
+      d.update(ct.subarray(0, ct.length - 16)); d.final(); return true;
+    } catch { return false; }
+  }
+
   function mdnsLookup(name, ms = 3000) {
     return new Promise(resolve => {
       let m; try { m = mdnsFactory({ reuseAddr: true }); } catch { return resolve(null); }
@@ -248,6 +268,7 @@ export function createSync(h) {
     Object.assign(S, { paired: true, nodeId: secret.nodeId, token: secret.token, caPem: r.caPem || null, cursor: 0, heal: null, auditPushed: q('SELECT COALESCE(MAX(id), 0) m FROM audit').m });
     // même « poivre » que le cabinet : les mots de passe du Dr Nouha et de l'administrateur fonctionnent ici à l'identique
     cfg.secrets.pepper = secret.pepper;
+    if (cfg.escrow && secret.backupKey) writeEscrow({ ...(readEscrow() || {}), officeBackupKey: secret.backupKey, backupKeyAt: Date.now() });
     fs.writeFileSync(path.join(cfg.dataDir, 'secrets.json'), JSON.stringify(cfg.secrets, null, 2), { mode: 0o600 });
     save();
     log('Portable associé au PC du cabinet');
@@ -386,7 +407,7 @@ export function createSync(h) {
         return { ok: true, sent: p.sent + healed, received: l.got, conflicts: conflictCount(), ...(healed ? { healed } : {}) };
       } catch (e) {
         Object.assign(S, { reachable: false, lastError: e.status === 401 ? 'Ce portable a été retiré au cabinet : associez-le de nouveau.' : e.message }); save();
-        if (e.status === 401) { S.paired = false; save(); }
+        if (e.status === 401) { S.paired = false; save(); wipeEscrow(); log('Portable retiré au cabinet : copie de secours effacée'); }
         return { ok: false, error: S.lastError };
       } finally { running = null; }
     })();
@@ -404,6 +425,18 @@ export function createSync(h) {
     return { ok: true, sync: r };
   });
   route('POST', '/api/sync/now', async ctx => { needUser(ctx); return syncOnce(); });
+  // Le navigateur du Dr Nouha dépose la clé des données (elle vient de la déverrouiller avec son mot de passe)
+  route('POST', '/api/portable/escrow', (ctx, b) => {
+    const u = needActive(ctx);
+    if (u.kind !== 'admin' || !u.protected) fail(403, 'forbidden', 'Réservé au Dr Nouha.');
+    if (!cfg.escrow) fail(409, 'off', 'Copie de secours désactivée : le disque de ce portable n\'est pas chiffré.');
+    if (!S.paired) fail(409, 'unpaired', 'Portable non associé.');
+    const raw = Buffer.from(String(b.dek || ''), 'base64');
+    if (raw.length !== 32 || !verifyDek(raw)) fail(400, 'bad_key', 'Clé invalide.');
+    writeEscrow({ ...(readEscrow() || {}), dek: raw.toString('base64'), dekAt: Date.now(), by: u.id });
+    audit(ctx, 'copie_secours_portable');
+    return { ok: true };
+  });
   route('GET', '/api/sync/conflicts', ctx => {
     const u = needActive(ctx);
     if (u.kind === 'superadmin') fail(403, 'forbidden', 'Réservé au Dr Nouha.');
@@ -441,6 +474,6 @@ export function createSync(h) {
     forwardable: p => FORWARD.some(re => re.test(p)),
     officeOnly: p => OFFICE_ONLY.some(re => re.test(p)),
     status: () => ({ role: 'nomade', paired: S.paired, office: { reachable: S.reachable, lastSync: S.lastSync, lastError: S.lastError },
-      pending: q('SELECT COUNT(*) n FROM records WHERE dirty = 1').n, conflicts: conflictCount() }),
+      pending: q('SELECT COUNT(*) n FROM records WHERE dirty = 1').n, conflicts: conflictCount(), escrow: escrowState() }),
   };
 }

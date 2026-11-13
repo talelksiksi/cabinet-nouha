@@ -69,16 +69,18 @@ export function applyProtectedOp(db, cfg, op, now = Date.now()) {
   try { p = typeof op.payload === 'string' ? JSON.parse(op.payload) : (op.payload || {}); } catch {}
   if (op.op === 'reset') {
     if (typeof p.inviteAuth !== 'string' || !/^[A-Za-z0-9+/=]{40,64}$/.test(p.inviteAuth)) return { ok: false, error: 'Demande invalide.' };
+    // copie de secours du portable : la clé des données voyage avec le code (chiffrée par lui), comme une invitation
+    const inviteDek = u.kind === 'admin' && typeof p.inviteDek === 'string' && p.inviteDek.length >= 20 && p.inviteDek.length <= 4000 ? p.inviteDek : null;
     db.exec('BEGIN IMMEDIATE');
     try {
       db.prepare(`UPDATE users SET status = 'invited', auth_hash = NULL, kdf_salt = NULL, kdf_iter = NULL, pub_key = NULL, priv_key_enc = NULL,
-                  invite_hash = ?, invite_expires = ?, invite_dek = NULL, failed_logins = 0, locked_until = 0, updated_at = ? WHERE id = ?`)
-        .run(inviteHashOf(cfg.secrets.pepper, u.id, p.inviteAuth), now + ACTIVATION_TTL, now, u.id);
+                  invite_hash = ?, invite_expires = ?, invite_dek = ?, failed_logins = 0, locked_until = 0, updated_at = ? WHERE id = ?`)
+        .run(inviteHashOf(cfg.secrets.pepper, u.id, p.inviteAuth), now + ACTIVATION_TTL, inviteDek, now, u.id);
       db.prepare('DELETE FROM user_keys WHERE user_id = ?').run(u.id);
       db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id);
       db.exec('COMMIT');
     } catch (e) { db.exec('ROLLBACK'); throw e; }
-    return { ok: true, expires: now + ACTIVATION_TTL };
+    return { ok: true, expires: now + ACTIVATION_TTL, withKey: !!inviteDek };
   }
   if (op.op === 'rename') {
     const name = String(p.displayName || '').trim();

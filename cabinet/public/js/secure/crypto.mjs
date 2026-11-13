@@ -61,6 +61,9 @@ export async function unlockPrivateKey(lockedJson, encKey) {
 /* ── Clé de données du cabinet (DEK) ── */
 export const newDek = () => subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
 const importDek = raw => subtle.importKey('raw', raw, 'AES-GCM', true, ['encrypt', 'decrypt']);
+/* Copie de secours sur le portable du Dr Nouha (dossier réservé aux administrateurs Windows, disque chiffré) */
+export const exportDek = async dek => b64(await subtle.exportKey('raw', dek));
+export const importDekB64 = s => importDek(unb64(s));
 export async function wrapDekFor(dek, publicJwk) {
   const pub = await subtle.importKey('jwk', JSON.parse(publicJwk), RSA, false, ['encrypt']);
   return b64(await subtle.encrypt({ name: 'RSA-OAEP' }, pub, await subtle.exportKey('raw', dek)));

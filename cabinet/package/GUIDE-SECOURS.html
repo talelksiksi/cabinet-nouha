@@ -32,10 +32,11 @@ th { background: #f3f5f8; }
 <h2><span>0</span>Ce qu'il faut avoir, toujours</h2>
 <table>
 <tr><th>Élément</th><th>Qui / où</th><th>Sert à</th></tr>
-<tr><td><b>Feuille de secours</b> (clé des données)</td><td>Dr Nouha · imprimée à la mise en service · sous enveloppe, <b>hors du cabinet</b></td><td>Retrouver l'accès aux dossiers après un mot de passe oublié. Égarée : <b>Mon compte → Imprimer une nouvelle feuille</b> (l'ancienne ne marche plus).</td></tr>
+<tr><td><b>Feuille de secours</b> (clé des données) — <i>dernier recours</i></td><td>Dr Nouha · imprimée à la mise en service · sous enveloppe, <b>hors du cabinet</b></td><td>Retrouver l'accès aux dossiers après un mot de passe oublié. Égarée : <b>Mon compte → Imprimer une nouvelle feuille</b> (l'ancienne ne marche plus).</td></tr>
 <tr><td><b>Clé de sauvegarde</b></td><td>Talel · <b>Sauvegardes &amp; système → Imprimer la clé de sauvegarde</b> · avec la feuille de secours</td><td>Restaurer une sauvegarde sur un <b>autre</b> PC.</td></tr>
 <tr><td><b>Clé USB des sauvegardes</b></td><td>Copie chaque mardi (bandeau à 11 h) · emportée <b>hors du cabinet</b></td><td>Repartir si le PC du cabinet est perdu (8 semaines de copies).</td></tr>
-<tr><td><b>Portable du Dr Nouha</b></td><td>Copie complète, synchronisée à chaque passage au cabinet</td><td>Continuer à travailler si le PC du cabinet tombe ; compléter une restauration ; outil « comptes protégés ».</td></tr>
+<tr><td><b>Portable du Dr Nouha</b></td><td>Copie complète, synchronisée à chaque passage au cabinet ; disque chiffré</td><td>Continuer à travailler si le PC du cabinet tombe ; compléter une restauration ; outil « comptes protégés » ;
+<b>copie de secours</b> de la clé des données et de la clé de sauvegarde (remplace les papiers au quotidien).</td></tr>
 </table>
 <div class="box ok">Les dossiers sont <b>chiffrés partout</b> (PC du cabinet, portable, sauvegardes, clé USB). Un PC ou une clé volés ne livrent rien
 sans un mot de passe de l'équipe. Talel lui-même ne peut pas lire les dossiers.</div>
@@ -46,7 +47,9 @@ sans un mot de passe de l'équipe. Talel lui-même ne peut pas lire les dossiers
 Le portable ne peut plus rien envoyer ni recevoir, y compris des demandes de l'outil « comptes protégés ».</li>
 <li>Par précaution, le Dr Nouha change son mot de passe : <b>Mon compte</b> (au cabinet).</li>
 <li>Ce qui est perdu : uniquement les modifications faites sur le portable <b>et pas encore synchronisées</b> (travail fait à la maison depuis le dernier passage au cabinet).</li>
-<li>Nouveau portable : paquet <b>Owner</b>, <code>INSTALLER.cmd</code>, puis association au cabinet (<code>GUIDE-PORTABLE.html</code>, étape 3). L'outil « comptes protégés » suit le nouveau portable.</li>
+<li>Nouveau portable : paquet <b>Owner</b>, <code>INSTALLER.cmd</code>, association au cabinet, puis le Dr Nouha s'y connecte une fois
+(<code>GUIDE-PORTABLE.html</code>, étapes 3 et 6). L'outil « comptes protégés » et la copie de secours suivent le nouveau portable.</li>
+<li>Pendant ce temps, la <b>feuille de secours</b> reste la seule façon de rendre l'accès aux dossiers si le Dr Nouha oubliait aussi son mot de passe.</li>
 </ol>
 
 <h2><span>B</span>Le PC du cabinet est en panne ou volé</h2>
@@ -54,7 +57,8 @@ Le portable ne peut plus rien envoyer ni recevoir, y compris des demandes de l'o
 <ol>
 <li>Sur le PC de remplacement (ou le même PC réparé/réinstallé) : paquet <b>Staff</b>, <code>INSTALLER.cmd</code>.
 Les deux codes d'activation affichés <b>ne servent pas</b> ici : la restauration remet les comptes existants.</li>
-<li>Lancer <code>RESTAURER.cmd</code> → choisir la sauvegarde la plus récente (<code>.cnbk</code>) sur la <b>clé USB</b> → saisir la <b>clé de sauvegarde</b> imprimée → taper <code>oui</code>.</li>
+<li>Lancer <code>RESTAURER.cmd</code> → choisir la sauvegarde la plus récente (<code>.cnbk</code>) sur la <b>clé USB</b> → saisir la <b>clé de sauvegarde</b>
+(feuille imprimée, ou sur le portable : <code>COMPTES-PROTEGES.cmd</code>, choix 5) → taper <code>oui</code>.</li>
 <li>Résultat : dossiers, comptes et <b>mots de passe de chacun</b> reviennent tels quels ; le <b>même certificat</b> est repris
 (les autres PC du cabinet n'ont rien à refaire) ; le portable reconnaît le nouveau PC.</li>
 <li>Si le PC a changé d'adresse IP : refaire la réservation dans la box (guide d'installation, étape 5).</li>
@@ -77,9 +81,10 @@ Les deux codes d'activation affichés <b>ne servent pas</b> ici : la restauratio
 <li>Sur <b>son portable</b> : <code>COMPTES-PROTEGES.cmd</code> → choix <b>1</b> → <code>OUI</code> → recopier le nouveau code.</li>
 <li>Portable au cabinet (Wi-Fi) : la demande arrive en moins d'une minute.</li>
 <li>Sur un PC du cabinet : <b>Première connexion (code d'activation ou d'invitation)</b> → <code>nouha</code> + code → nouveau mot de passe.</li>
-<li>L'application demande la <b>feuille de secours</b> : la saisir, l'accès aux dossiers revient.</li>
+<li>Avec la copie de secours du portable, <b>l'accès aux dossiers revient tout seul</b>. Sinon, l'application demande la <b>feuille de secours</b>.</li>
 </ol>
-<p><b>Et si le portable est aussi perdu ?</b> Talel se connecte au cabinet, associe un nouveau portable (cas <b>A</b>), puis fait l'étape 1 depuis celui-ci.</p>
+<p><b>Et si le portable est aussi perdu ?</b> Talel se connecte au cabinet, associe un nouveau portable (cas <b>A</b>), puis fait l'étape 1 depuis celui-ci.
+Le nouveau portable n'a pas encore de copie de secours (elle se crée quand le Dr Nouha s'y connecte) : il faudra la <b>feuille de secours</b>.</p>
 
 <h2><span>E</span>Talel a oublié son mot de passe</h2>
 <p>Même chemin que <b>D</b>, choix <b>2</b> dans l'outil, identifiant <code>talel</code>. Pas de feuille de secours : ce compte n'a pas accès aux dossiers.</p>
@@ -93,16 +98,21 @@ Les deux codes d'activation affichés <b>ne servent pas</b> ici : la restauratio
 <h2><span>G</span>Papiers égarés</h2>
 <ul>
 <li><b>Feuille de secours</b> : Dr Nouha → <b>Mon compte → Imprimer une nouvelle feuille</b>. L'ancienne cesse de fonctionner.</li>
-<li><b>Clé de sauvegarde</b> : Talel → <b>Sauvegardes &amp; système → Imprimer la clé de sauvegarde</b> (tant que le PC du cabinet fonctionne).</li>
+<li><b>Clé de sauvegarde</b> : Talel → <b>Sauvegardes &amp; système → Imprimer la clé de sauvegarde</b>, ou sur le portable : <code>COMPTES-PROTEGES.cmd</code>, choix 5.</li>
 <li><b>Code d'activation</b> pas encore utilisé à l'installation : relancer <code>INSTALLER.cmd</code> sur le PC du cabinet.</li>
 </ul>
 
 <h2><span>H</span>Coupure de courant</h2>
 <p>Rien à faire : au redémarrage du PC, le serveur repart seul et la sauvegarde manquée (11 h 30 ou 15 h 45) est faite immédiatement.</p>
 
+<h2><span>I</span>Que permet la clé USB seule ?</h2>
+<p>La clé USB contient tous les dossiers, <b>chiffrés</b> (un voleur de la clé n'en tire rien). Pour la restaurer il faut la <b>clé de sauvegarde</b>
+(feuille ou portable). Pour ensuite lire les dossiers, il suffit que <b>le Dr Nouha connaisse son mot de passe</b> : les comptes sont dans la sauvegarde.
+Si elle l'a oublié : copie de secours du portable, ou feuille de secours.</p>
+
 <h2><span>!</span>Le seul cas sans solution</h2>
-<div class="box warn">Mot de passe du Dr Nouha oublié <b>et</b> feuille de secours perdue, sans autre administrateur ayant accès aux dossiers :
-les dossiers restent chiffrés pour toujours. C'est le prix de la confidentialité : garder la feuille de secours en lieu sûr, hors du cabinet.
+<div class="box warn">Mot de passe du Dr Nouha oublié, <b>et</b> portable perdu (ou sans copie de secours), <b>et</b> feuille de secours perdue,
+sans autre administrateur ayant accès aux dossiers : les dossiers restent chiffrés pour toujours. C'est le prix de la confidentialité : garder la feuille de secours en lieu sûr, hors du cabinet.
 (Si le Dr Nouha a donné le type « Dentiste + administration » à un autre praticien, celui-ci peut lui rendre l'accès dans <b>Utilisateurs</b>.)</div>
 </main>
 </body>

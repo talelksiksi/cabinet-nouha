@@ -17,6 +17,7 @@ import path from 'node:path';
 import { loadConfig } from '../server/config.mjs';
 import { openDb } from '../server/db.mjs';
 import { PROTECTED_NAMES, provisionProtected, newActivationCode, inviteAuthOf } from '../server/accounts.mjs';
+import * as C from '../public/js/secure/crypto.mjs';
 
 const [cmd = 'etat', who, ...rest] = process.argv.slice(2);
 const cfg = loadConfig();
@@ -38,6 +39,11 @@ function state() {
     console.log(`  ${name.padEnd(8)} ${u.display_name} — ${st}`);
   }
   if (isNomad) {
+    line();
+    const esc = escrow();
+    console.log(`  Copie de secours : ${!cfg.escrow ? 'DÉSACTIVÉE (disque non chiffré à l\'installation : feuille de secours seulement)'
+      : esc?.dek ? `présente (clé des données du ${fmt(esc.dekAt)}${esc.officeBackupKey ? ', clé de sauvegarde du cabinet' : ''})`
+      : 'pas encore faite : le Dr Nouha se connecte une fois sur ce portable'}`);
     const ops = db.prepare('SELECT * FROM protected_ops ORDER BY created_at DESC LIMIT 5').all();
     if (ops.length) {
       line();
@@ -50,6 +56,10 @@ function state() {
     }
   }
   line();
+}
+
+function escrow() {
+  try { return JSON.parse(fs.readFileSync(path.join(cfg.dataDir, 'secours-portable.json'), 'utf8')); } catch { return null; }
 }
 
 function queue(op, username, payload) {
@@ -84,7 +94,12 @@ switch (cmd) {
     if (!isNomad) die('Cette opération se fait uniquement depuis le portable du Dr Nouha.');
     if (!PROTECTED_NAMES.includes(who)) die(`Compte inconnu. Choisir : ${PROTECTED_NAMES.join(' ou ')}.`);
     const code = newActivationCode();
-    queue('reset', who, { inviteAuth: inviteAuthOf(code, who) });
+    const payload = { inviteAuth: inviteAuthOf(code, who) };
+    // copie de secours de ce portable : la clé des données part avec le code (chiffrée par lui) → accès rendu sans feuille
+    const esc = escrow();
+    const withKey = who === 'nouha' && !!esc?.dek;
+    if (withKey) payload.inviteDek = await C.wrapDekForInvite(await C.importDekB64(esc.dek), code, who);
+    queue('reset', who, payload);
     console.log('');
     console.log(`  Nouveau code d'activation pour « ${who} » : ${code}`);
     line();
@@ -92,7 +107,8 @@ switch (cmd) {
     console.log('     PC du cabinet allumé, application ouverte ou non : en moins d\'une minute).');
     console.log('  2. Puis, sur un PC du cabinet : « Première connexion (code d\'activation ou d\'invitation) », identifiant + ce code,');
     console.log('     nouveau mot de passe. Valable 72 h après son arrivée au cabinet.');
-    if (who === 'nouha') console.log('  3. Accès aux dossiers : se le redonner avec la FEUILLE DE SECOURS imprimée (écran proposé).');
+    if (withKey) console.log('  3. Accès aux dossiers : rendu automatiquement avec ce code (copie de secours de ce portable).');
+    else if (who === 'nouha') console.log('  3. Accès aux dossiers : se le redonner avec la FEUILLE DE SECOURS imprimée (aucune copie de secours sur ce portable).');
     console.log('  L\'ancien mot de passe ne fonctionnera plus, ni au cabinet ni sur ce portable.');
     line();
     break;
@@ -106,7 +122,20 @@ switch (cmd) {
     console.log(`\n  Nouveau nom « ${name} » pour ${who} : appliqué au cabinet à la prochaine synchronisation.\n`);
     break;
   }
+  case 'cle-sauvegarde': {
+    // PC du cabinet perdu et feuille « clé de sauvegarde » introuvable : la clé est aussi gardée ici
+    if (!isNomad) die('Sur le PC du cabinet : Sauvegardes & système → Imprimer la clé de sauvegarde.');
+    const k = escrow()?.officeBackupKey;
+    if (!k) die('Aucune clé de sauvegarde sur ce portable (copie de secours désactivée ou portable pas encore associé).');
+    console.log('');
+    console.log('  Clé de sauvegarde du cabinet (pour RESTAURER.cmd sur un PC de remplacement) :');
+    line();
+    console.log('  ' + k);
+    line();
+    db.prepare(`INSERT INTO audit (ts, user_id, username, action, target, detail, ip, origin) VALUES (?, NULL, 'outil du portable', 'cle_sauvegarde_consultee', NULL, NULL, NULL, 'portable')`).run(Date.now());
+    break;
+  }
   case 'etat': state(); break;
-  default: die('Commandes : init | etat | reinitialiser <nouha|talel> | renommer <nouha|talel> "<nom>"');
+  default: die('Commandes : init | etat | reinitialiser <nouha|talel> | renommer <nouha|talel> "<nom>" | cle-sauvegarde');
 }
 db.close();
