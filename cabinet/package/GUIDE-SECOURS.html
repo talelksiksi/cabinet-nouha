@@ -69,6 +69,24 @@ Les deux codes d'activation affichés <b>ne servent pas</b> ici : la restauratio
 (par exemple, le travail de l'après-midi si le portable était parti avant). D'où l'intérêt de la copie USB du mardi et des passages réguliers du portable au cabinet.
 <b>En cas de vol</b> : faire changer les mots de passe de toute l'équipe, et voir avec l'INPDP si une déclaration de l'incident est nécessaire.</div>
 
+<h2><span>B bis</span>Changer le PC du cabinet (remplacement prévu)</h2>
+<p>Comme le cas <b>B</b>, mais sans rien perdre, car l'ancien PC marche encore. À faire <b>après la fermeture</b>, quand plus personne ne saisit.</p>
+<ol>
+<li><b>Ancien PC</b> : <b>Sauvegardes &amp; système → Sauvegarder maintenant</b>, puis brancher la clé USB et « Faire la copie » (bandeau ou même page).
+Si le portable du Dr Nouha est là, le laisser se synchroniser avant.</li>
+<li><b>Nouveau PC</b> : paquet <b>Staff</b>, <code>INSTALLER.cmd</code> (ignorer les deux codes affichés), puis <code>RESTAURER.cmd</code> → la sauvegarde de l'étape 1
+sur la clé USB → la <b>clé de sauvegarde</b> (feuille, ou portable : <code>COMPTES-PROTEGES.cmd</code>, choix 5).</li>
+<li>Tout est repris : dossiers, comptes, mots de passe, <b>même certificat</b>, portables associés. Les autres PC et le portable n'ont rien à refaire.</li>
+<li><b>Box</b> : réserver la nouvelle adresse IP du nouveau PC (guide d'installation, étape 5). Si un autre PC avait dû saisir l'adresse IP à la main
+(cas rare : <code>POSTE-CABINET.cmd</code> l'avait demandée), relancer <code>POSTE-CABINET.cmd</code> sur ce PC.</li>
+<li><b>Ancien PC</b>, une fois le nouveau vérifié (connexion d'une assistante, dossiers visibles) : <code>C:\EspaceCabinet\DESINSTALLER.cmd</code>
+et taper <code>SUPPRIMER</code>. Le donner ou le jeter seulement après.</li>
+</ol>
+
+<h2><span>B ter</span>Changer un autre PC du cabinet (poste d'une assistante)</h2>
+<p>Ces PC ne gardent <b>aucun dossier</b> : rien à transférer. Sur le nouveau PC : <code>POSTE-CABINET.cmd</code> (paquet Staff), et c'est tout.
+L'ancien peut partir tel quel (rien n'y est stocké ; par prudence, fermer les sessions du navigateur ou le réinitialiser).</p>
+
 <h2><span>C</span>Les deux sont perdus (incendie, cambriolage)</h2>
 <ol>
 <li>PC de remplacement : cas <b>B</b>, avec la clé USB et la clé de sauvegarde (rangées hors du cabinet).</li>
