@@ -238,12 +238,13 @@ Fait :
 
 Écarté volontairement : l'image de salle de soins de la bannière (semble être une illustration, pas son cabinet).
 
-- **En ligne** : https://dr-nouha-ksiksi.ksiksi-talel.workers.dev (Cloudflare Workers, fichiers statiques), dépôt privé
+- **En ligne** : https://drnouhaksiksi.tn (et www), domaine acheté chez OVH Tunisie le 19/11/2026 au nom de Talel, DNS chez Cloudflare.
+  Ancienne adresse toujours active : https://dr-nouha-ksiksi.ksiksi-talel.workers.dev (Cloudflare Workers, fichiers statiques), dépôt privé
   https://github.com/talelksiksi/cabinet-nouha, redéploiement automatique à chaque push sur `main`. `wrangler.jsonc` ne publie
   que `site/` (vérifié : `/app/`, `/assets/`, `PLAN.md` → 404). Formulaire de RDV : ouvre WhatsApp pré-rempli (rien n'est stocké).
 
 Reste à faire en priorité :
-1. Envoyer le lien à Dr Nouha ; choisir le nom de domaine et le brancher (onglet Domains du Worker).
+1. Envoyer le lien https://drnouhaksiksi.tn à Dr Nouha. Domaine branché le 20/11/2026. Boîte mail gratuite OVH (Zimbra Starter) disponible si elle veut contact@drnouhaksiksi.tn : enregistrements MX et SPF d'OVH gardés chez Cloudflare.
 2. Faire relire les textes arabes par Dr Nouha (formulations médicales, ton).
 3. Compléter les horaires (section Accès des deux pages).
 4. Faire valider les textes (descriptions des cas, points « Votre dentiste ») et les consentements des patients.

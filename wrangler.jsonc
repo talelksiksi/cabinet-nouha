@@ -3,7 +3,13 @@
 {
   "name": "dr-nouha-ksiksi",
   "compatibility_date": "2025-09-01",
-  // Adresse publique en attendant le nom de domaine ; pas d'adresses d'aperçu par version
+  // Le site répond sur drnouhaksiksi.tn (domaine chez OVH, DNS chez Cloudflare depuis le 20/11/2026).
+  // Déclarés ici pour qu'un déploiement ne les détache jamais. L'adresse workers.dev reste active ;
+  // les balises canonical renvoient vers le domaine, donc pas de contenu en double pour Google.
+  "routes": [
+    { "pattern": "drnouhaksiksi.tn", "custom_domain": true },
+    { "pattern": "www.drnouhaksiksi.tn", "custom_domain": true }
+  ],
   "workers_dev": true,
   "preview_urls": false,
   "assets": {
